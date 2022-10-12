@@ -1,0 +1,52 @@
+{
+    "name": "Potato_plants",
+    "n_gpu": 1,
+
+    "arch": {
+        "type": "ConvAutoencoderGroupsHyp",
+        "args": {}
+    },
+    "data_loader": {
+        "type": "HypDataLoader",
+        "args":{
+            "data_dir": "C:\\Users\\janezla\\Documents\\DATA\\ana_converted\\slikanje_2022_rad_1",
+            "data_sampler": "RandomSampler15",
+            "grouped_labels_filepath": "grouped_labels\\groups_krka.xlsx",
+            "batch_size": 1,
+            "shuffle": true,
+            "validation_split":0.2,
+            "num_workers": 2
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr":0.0001,
+            "weight_decay": 0.0005,
+            "amsgrad": true
+        }
+    },
+    "loss": "bce_loss",
+    "metrics": [
+        "accuracy"
+    ],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 10,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "epochs": 100,
+
+        "save_dir": "saved/",
+        "save_period": 1,
+        "verbosity": 2,
+        
+        "monitor": "min val_loss",
+        "early_stop": 30,
+
+        "tensorboard": true
+    }
+}
