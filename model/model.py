@@ -31,53 +31,53 @@ class ConvAutoencoderGroupsHyp(BaseModel):
     def __init__(self):
         super().__init__()
         conv1 = nn.Sequential(
-            nn.Conv2d(448*1, 448*2, 3, padding=1, groups=448),
-            nn.BatchNorm2d(448*2),
+            nn.Conv2d(373*1, 373*2, 3, padding=1, groups=373),
+            nn.BatchNorm2d(373*2),
             nn.ReLU(),
             # nn.Dropout(0.1),
             nn.MaxPool2d(2,2)
         )
         conv2 = nn.Sequential(
-            nn.Conv2d(448*2, 448*3, 3, padding=1, groups=448),
-            nn.BatchNorm2d(448*3),
+            nn.Conv2d(373*2, 373*3, 3, padding=1, groups=373),
+            nn.BatchNorm2d(373*3),
             nn.ReLU(),
             nn.Dropout(0.1),
             nn.MaxPool2d(2,2)
         )
         conv3 = nn.Sequential(
-            nn.Conv2d(448*3, 448*4, 3, padding=1, groups=448),
-            nn.BatchNorm2d(448*4),
+            nn.Conv2d(373*3, 373*4, 3, padding=1, groups=373),
+            nn.BatchNorm2d(373*4),
             nn.ReLU(),
             nn.Dropout(0.1),
             nn.MaxPool2d(2,2)
         )
         t_conv1 = nn.Sequential(
-            nn.ConvTranspose2d(448*4, 448*3, 2, stride=2, groups=448),
-            nn.BatchNorm2d(448*3),
+            nn.ConvTranspose2d(373*4, 373*3, 2, stride=2, groups=373),
+            nn.BatchNorm2d(373*3),
             nn.ReLU(),
         )
         t_conv2 = nn.Sequential(
-            nn.ConvTranspose2d(448*3, 448*2, 2, stride=2, groups=448),
-            nn.BatchNorm2d(448*2),
+            nn.ConvTranspose2d(373*3, 373*2, 2, stride=2, groups=373),
+            nn.BatchNorm2d(373*2),
             nn.ReLU(),
         )
         t_conv3 = nn.Sequential(
-            nn.ConvTranspose2d(448*2, 448*1, 2, stride=2, groups=448),
-            nn.BatchNorm2d(448*1),
+            nn.ConvTranspose2d(373*2, 373*1, 2, stride=2, groups=373),
+            nn.BatchNorm2d(373*1),
             nn.Sigmoid(),
         )
         self.encoder = nn.Sequential(conv1, conv2, conv3)
         self.decoder = nn.Sequential(t_conv1, t_conv2, t_conv3)
         self.encoder2 = nn.Sequential(
-            nn.Conv2d(448*4, 448*1, 3, padding=1, groups=448),
-            nn.BatchNorm2d(448*1),
+            nn.Conv2d(373*4, 373*1, 3, padding=1, groups=373),
+            nn.BatchNorm2d(373*1),
             nn.ReLU(),
             nn.Dropout(0.1),
             nn.MaxPool2d(8,8),
         )
         self.classifier = nn.Sequential(
             nn.Flatten(1),
-            nn.Linear(448, 1),
+            nn.Linear(373, 1),
             nn.Sigmoid(),
         )
 
