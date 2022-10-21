@@ -20,124 +20,39 @@ import torch.nn.functional as F
 # print(out_loss)
 
 
-class ConvAutoencoder1(nn.Module):
+class ConvNet(nn.Module):
     def __init__(self):
         super().__init__()
-        num_channels = 3
-        params_conv = {
-            "kernel_size": 3,
-            "stride": 2,
-            "padding": 0,
-            "groups": num_channels
-        }
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=6, **params_conv)  
-        self.conv2 = nn.Conv2d(in_channels=6, out_channels=9, **params_conv)  
-        self.conv3 = nn.Conv2d(in_channels=9, out_channels=12, **params_conv)  
-        self.conv4 = nn.Conv2d(in_channels=12, out_channels=15, **params_conv)  
-        self.pool = nn.MaxPool2d(3, 3)
-        params_conv["kernel_size"] = 2
-        self.conv_trans1 = nn.ConvTranspose2d(in_channels=15, out_channels=9, **params_conv)
-        self.conv_trans2 = nn.ConvTranspose2d(in_channels=9, out_channels=6, **params_conv)
-        self.conv_trans3 = nn.ConvTranspose2d(in_channels=6, out_channels=3, **params_conv)
-        self.conv_trans4 = nn.ConvTranspose2d(in_channels=3, out_channels=3, **params_conv)
-        self.conv_trans5 = nn.ConvTranspose2d(in_channels=3, out_channels=3, **params_conv)
+        self.conv1 = self._conv_block(373, 128)
+        self.conv2 = self._conv_block(128, 64)
+        self.conv3 = self._conv_block(64, 32)
+        self.conv4 = self._conv_block(32, 16)
+        self.conv5 = self._conv_block(16, 8)
 
-
-    def __str__(self):
-        """
-        Model prints with number of trainable parameters
-        """
-        model_parameters = filter(lambda p: p.requires_grad, self.parameters())
-        params = sum([np.prod(p.size()) for p in model_parameters])
-        return super().__str__() + '\nTrainable parameters: {}'.format(params)
-
-    def forward(self, x):
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
-        x = F.relu(self.conv3(x))
-        # x = F.relu(self.conv4(x))
-        # x = self.pool(x)
-        # x = F.relu(self.conv_trans1(x))
-        # x = F.relu(self.conv_trans2(x))
-        # x = F.relu(self.conv_trans3(x))
-        # x = F.relu(self.conv_trans4(x))
-        # x = F.relu(self.conv_trans5(x))
-        # x = F.sigmoid(x)
-        return x
-
-# x = pool(x)
-# x = F.relu(conv2(x))
-# x = pool(x)
-# x = F.relu(t_conv1(x))
-# x = F.sigmoid(t_conv2(x))
-
-
-class ConvAutoencoder(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.conv1 = nn.Sequential(
-            nn.Conv2d(160*1, 160*5, 3, padding=1, groups=160),
-            nn.BatchNorm2d(160*5),
-            nn.ReLU(),
-            nn.Dropout(0.1),
-            nn.MaxPool2d(2,2)
-        )
-        self.conv2 = nn.Sequential(
-            nn.Conv2d(160*5, 160*7, 3, padding=1, groups=160),
-            nn.BatchNorm2d(160*7),
-            nn.ReLU(),
-            nn.Dropout(0.1),
-            nn.MaxPool2d(2,2)
-        )
-        self.conv3 = nn.Sequential(
-            nn.Conv2d(160*7, 160*5, 3, padding=1, groups=160),
-            nn.BatchNorm2d(160*5),
-            nn.ReLU(),
-            nn.Dropout(0.1),
-            nn.MaxPool2d(2,2)
-        )
-        self.t_conv1 = nn.Sequential(
-            nn.ConvTranspose2d(160*5, 160*7, 2, stride=2, groups=160),
-            nn.BatchNorm2d(160*7),
-            nn.ReLU(),
-        )
-        self.t_conv2 = nn.Sequential(
-            nn.ConvTranspose2d(160*7, 160*5, 2, stride=2, groups=160),
-            nn.BatchNorm2d(160*5),
-            nn.ReLU(),
-        )
-        self.t_conv3 = nn.Sequential(
-            nn.ConvTranspose2d(160*5, 160*1, 2, stride=2, groups=160),
-            nn.BatchNorm2d(160*1),
-            nn.Sigmoid(),
-        )
-        # self.encoder = nn.Sequential(conv1, conv2, conv3)
-        # self.decoder = nn.Sequential(t_conv1, t_conv2, t_conv3)
-        self.encoder2 = nn.Sequential(
-            nn.Conv2d(160*5, 160*1, 3, padding=1, groups=160),
-            nn.BatchNorm2d(160*1),
-            nn.ReLU(),
-            nn.Dropout(0.1),
-            nn.MaxPool2d(8,8),
-        )
-        self.classifier = nn.Sequential(
+        self.fc = nn.Sequential(
             nn.Flatten(1),
-            nn.Linear(160, 1),
+            nn.LazyLinear(1),
             nn.Sigmoid(),
         )
+
+    def _conv_block(self, in_channels, out_channels):
+        conv_block = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, 3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.MaxPool2d(2, 2),
+        )
+        return conv_block
 
     def forward(self, x):
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
-        x = self.t_conv1(x)
-        x = self.t_conv2(x)
-        x = self.t_conv3(x)
-        # encoded = self.encoder(x)
-        # decoded = self.decoder(encoded)
-        # encoded2 = self.encoder2(encoded)
-        # pred_class = self.classifier(encoded2)
-        return decoded, pred_class
+        x = self.conv4(x)
+        x = self.conv5(x)
+        x = self.fc(x)
+        return x
 
     def __str__(self):
         """
@@ -145,25 +60,68 @@ class ConvAutoencoder(nn.Module):
         """
         model_parameters = filter(lambda p: p.requires_grad, self.parameters())
         params = sum([np.prod(p.size()) for p in model_parameters])
-        return super().__str__() + '\nTrainable parameters: {}'.format(params)
-
-network = ConvAutoencoder()
-x = torch.rand(32, 160, 64, 64)
-decoded, pred_class = network.forward(x)
-print(decoded.shape)
-print(network)
-
-# from data_loader.data_loaders import PotatosDataset
-
-# root_dir = "C:\\Users\\janezla\\Documents\\DATA\\slikanje_3_images_sliced_5thresh"
-# data = PotatosDataset(root_dir, train=False)
-# pass
+        return super().__str__() + "\nTrainable parameters: {}".format(params)
 
 
-# input = torch.randn(5, 160, 4, 4)
-# # With default parameters
-# decoded = input.view(-1, 2560)
-# print(decoded.size())
+# network = ConvNet()
+# x = torch.rand(32, 373, 32, 32)
+# x = network.conv1(x)
+# x = network.conv2(x)
+# x = network.conv3(x)
+# x = network.conv4(x)
+# x = network.conv5(x)
+# # x = network.fc(x)
+# print(x.shape)
+# # print(network)
 
 
+class AreaNormalization:
+    def __call__(self, image):
+        image = self._image_normalization(image, self._signal_normalize)
+        return image.astype(dtype="float32")
 
+    @staticmethod
+    def _image_normalization(image, func1d):
+        return np.apply_along_axis(func1d, axis=2, arr=image)
+
+    @staticmethod
+    def _signal_normalize(signal):
+        area = np.trapz(signal)
+        if area == 0:
+            return signal
+        return signal / area
+
+x = np.random.rand(5, 5, 2).astype(dtype="float32")
+
+rand = AreaNormalization()
+print(x)
+# print("")
+print(rand(x))
+
+
+from numba import njit, prange
+
+
+@njit()
+def _signal_normalize(signal):
+    area = np.float32(np.trapz(signal))
+    if area == 0:
+        return signal
+    return signal / area
+
+@njit(parallel=True)
+def AreaNormalization(image):
+    image_out = np.zeros_like(image)
+    n_rows, n_cols, _ = image.shape
+    for v in prange(n_rows):
+        for u in prange(n_cols):
+            image_out[v, u, :] = _signal_normalize(image[v, u, :])
+    return image_out
+
+
+x = np.random.rand(5, 5, 20).astype(dtype="float32")
+
+print(x.shape)
+x = AreaNormalization(x)
+print("a")
+print(x.shape)

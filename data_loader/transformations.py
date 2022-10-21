@@ -58,9 +58,19 @@ class RandomMirror:
         return image.astype(dtype="float32")
 
 
-# x = np.random.rand(5, 5, 20).astype(dtype="float32")
+class AreaNormalization:
+    def __call__(self, image):
+        image = self._image_normalization(image, self._signal_normalize)
+        return image.astype(dtype="float32")
 
-# rand = RandomMirror()
-# print(x.shape)
-# print("")
-# print(rand(x).shape)
+    @staticmethod
+    def _image_normalization(image, func1d):
+        return np.apply_along_axis(func1d, axis=2, arr=image)
+
+    @staticmethod
+    def _signal_normalize(signal):
+        area = np.trapz(signal)
+        if area == 0:
+            return signal
+        return signal / area
+

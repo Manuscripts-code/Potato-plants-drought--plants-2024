@@ -13,7 +13,12 @@ from torchvision import transforms
 
 from . import data_samplers as module_samplers
 from .sp_image import SPImage
-from .transformations import AddGaussianNoise, RandomCrop, RandomMirror
+from .transformations import (
+    AddGaussianNoise,
+    AreaNormalization,
+    RandomCrop,
+    RandomMirror,
+)
 
 
 class BaseDataLoader(DataLoader):
@@ -117,6 +122,7 @@ class PlantsDataset(Dataset):
         images = []
         classes = []
         labels = []
+        area_normalize = AreaNormalization()
         for path in track(images_paths, description="Loading images..."):
             image = SPImage(sp.envi.open(path))
             image_label = image.label
@@ -127,8 +133,10 @@ class PlantsDataset(Dataset):
             image_group = groups[groups.labels == image_label].groups_encoded.iloc[0]
 
             # convect image to array and replace nans with zeros
-            # and remove noisy channels
             image_arr = np.nan_to_num(image.to_numpy())
+            # normalize by area under the signal
+            image_arr = area_normalize(image_arr)
+            # and remove noisy channels
             image_arr = np.delete(image_arr, self.NOISY_BANDS, axis=2)
 
             images.append(image_arr)
