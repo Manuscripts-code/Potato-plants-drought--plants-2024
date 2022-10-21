@@ -87,3 +87,39 @@ class ConvAutoencoderGroupsHyp(BaseModel):
         encoded2 = self.encoder2(encoded) # further reduce dimension to 448 dim vector
         pred_class = self.classifier(encoded2) # predict from 448 dim vector
         return decoded, encoded2, pred_class
+
+
+
+class ConvNet(BaseModel):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = self._conv_block(373, 128)
+        self.conv2 = self._conv_block(128, 64)
+        self.conv3 = self._conv_block(64, 32)
+        self.conv4 = self._conv_block(32, 16)
+        self.conv5 = self._conv_block(16, 8)
+
+        self.fc = nn.Sequential(
+            nn.Flatten(1),
+            nn.LazyLinear(1),
+            nn.Sigmoid(),
+        )
+
+    def _conv_block(self, in_channels, out_channels):
+        conv_block = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, 3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.MaxPool2d(2, 2),
+        )
+        return conv_block
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
+        x = self.conv4(x)
+        x = self.conv5(x)
+        x = self.fc(x)
+        return x

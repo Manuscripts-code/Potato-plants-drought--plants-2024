@@ -2,16 +2,16 @@
     "name": "Potato_plants",
     "n_gpu": 1,
     "arch": {
-        "type": "ConvAutoencoderGroupsHyp",
+        "type": "ConvNet",
         "args": {}
     },
     "data_loader": {
         "type": "HypDataLoader",
         "args": {
-            "data_dir": "C:\\Users\\janezla\\Documents\\DATA\\ana_converted\\slikanje_2022_rad_1",
+            "data_dir": "C:\\Users\\janezla\\Documents\\DATA\\ana_converted\\slikanje_2022_rad_4",
             "data_sampler": "RandomSampler15",
             "grouped_labels_filepath": "grouped_labels\\groups_krka.xlsx",
-            "batch_size": 5,
+            "batch_size": 12,
             "shuffle": true,
             "validation_split": 0.2,
             "num_workers": 2

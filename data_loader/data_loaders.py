@@ -13,6 +13,7 @@ from torchvision import transforms
 
 from . import data_samplers as module_samplers
 from .sp_image import SPImage
+from .transformations import AddGaussianNoise, RandomCrop, RandomMirror
 
 
 class BaseDataLoader(DataLoader):
@@ -82,11 +83,19 @@ class BaseDataLoader(DataLoader):
 class PlantsDataset(Dataset):
     def __init__(self, data_dir, data_sampler, grouped_labels_filepath, training):
         self.train = training
-        self.transform = transforms.Compose(
+        self.transform_train = transforms.Compose(
+            [
+                # AddGaussianNoise(0.01, 0.02),
+                RandomMirror(),
+                transforms.ToTensor(),
+            ]
+        )
+        self.transform_test = transforms.Compose(
             [
                 transforms.ToTensor(),
             ]
         )
+
         # hardcoded bands to remove
         self.NOISY_BANDS = np.concatenate(
             [np.arange(26), np.arange(140, 171), np.arange(430, 448)]
@@ -132,7 +141,12 @@ class PlantsDataset(Dataset):
         return len(self.images)
 
     def __getitem__(self, idx):
-        img = self.transform(self.images[idx])
+        if self.train:
+            transform = self.transform_train
+        else:
+            transform = self.transform_test
+
+        img = transform(self.images[idx])
         target = self.classes[idx]
         return (img, target)
 
