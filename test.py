@@ -13,29 +13,6 @@ import model.model as module_arch
 from parse_config import ConfigParser
 
 
-def visualize(images, output):
-    def imshow(img):
-        # img = img / 2 + 0.5  
-        plt.imshow(np.transpose(img.to("cpu"), (1, 2, 0))) 
-    no_images = images.shape[0]
-
-    #Original Images
-    print("Original Images")
-    fig, axes = plt.subplots(nrows=1, ncols=5, sharex=True, sharey=True, figsize=(12,4))
-    for idx in np.arange(no_images):
-        ax = fig.add_subplot(1, 5, idx+1, xticks=[], yticks=[])
-        imshow(images[idx])
-    # plt.show()
-
-    #Reconstructed Images
-    print('Reconstructed Images')
-    fig, axes = plt.subplots(nrows=1, ncols=5, sharex=True, sharey=True, figsize=(12,4))
-    for idx in np.arange(no_images):
-        ax = fig.add_subplot(1, 5, idx+1, xticks=[], yticks=[])
-        imshow(output[idx])
-    plt.show() 
-
-
 def main(config):
     logger = config.get_logger('test')
 
@@ -81,17 +58,10 @@ def main(config):
             data, target = data.to(device), target.to(device)
             target = target.view(len(target), -1).float()
 
-            decoded, _, pred_class = model(data)
-            loss1 = loss_fn(decoded, data) 
-            loss2 = loss_fn(pred_class, target)
-            loss = loss1 + loss2
-            target_list.append(target)
-            pred_list.append(pred_class)
-
-            #
-            # save sample images, or do something with output here
-            # visualize(data[:,[55,41,12],:,:], decoded[:,[55,41,12],:,:])
-            #
+            pred_class = model(data)
+            loss = loss_fn(pred_class, target)
+            # target_list.append(target)
+            # pred_list.append(pred_class)
 
             # computing loss, metrics on test set
             batch_size = data.shape[0]
@@ -106,10 +76,10 @@ def main(config):
     })
     logger.info(log)
 
-    for t, p in zip(target_list, pred_list):
-        t_ = t[0][0].cpu().numpy()
-        p_ = round(p[0][0].cpu().numpy().round())
-        print(t_,p_)
+    # for t, p in zip(target_list, pred_list):
+    #     t_ = t[0][0].cpu().numpy()
+    #     p_ = round(p[0][0].cpu().numpy().round())
+    #     print(t_,p_)
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser(description='PyTorch Template')
