@@ -13,12 +13,8 @@ from torchvision import transforms
 
 from . import data_samplers as module_samplers
 from .sp_image import SPImage
-from .transformations import (
-    AddGaussianNoise,
-    AreaNormalization,
-    RandomCrop,
-    RandomMirror,
-)
+from .transformations import (AddGaussianNoise, AreaNormalization, RandomCrop,
+                              RandomMirror)
 
 
 class BaseDataLoader(DataLoader):
@@ -90,8 +86,9 @@ class PlantsDataset(Dataset):
         self.train = training
         self.transform_train = transforms.Compose(
             [
-                # AddGaussianNoise(0.01, 0.02),
+                # AddGaussianNoise(0.001, 0.002),
                 RandomMirror(),
+                # AreaNormalization(),
                 transforms.ToTensor(),
             ]
         )

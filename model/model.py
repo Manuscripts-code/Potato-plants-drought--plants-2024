@@ -9,6 +9,7 @@ class BaseModel(nn.Module):
     """
     Base class for all models
     """
+
     @abstractmethod
     def forward(self, *inputs):
         """
@@ -24,56 +25,56 @@ class BaseModel(nn.Module):
         """
         model_parameters = filter(lambda p: p.requires_grad, self.parameters())
         params = sum([np.prod(p.size()) for p in model_parameters])
-        return super().__str__() + '\nTrainable parameters: {}'.format(params)
+        return super().__str__() + "\nTrainable parameters: {}".format(params)
 
 
 class ConvAutoencoderGroupsHyp(BaseModel):
     def __init__(self):
         super().__init__()
         conv1 = nn.Sequential(
-            nn.Conv2d(373*1, 373*2, 3, padding=1, groups=373),
-            nn.BatchNorm2d(373*2),
+            nn.Conv2d(373 * 1, 373 * 2, 3, padding=1, groups=373),
+            nn.BatchNorm2d(373 * 2),
             nn.ReLU(),
             # nn.Dropout(0.1),
-            nn.MaxPool2d(2,2)
+            nn.MaxPool2d(2, 2),
         )
         conv2 = nn.Sequential(
-            nn.Conv2d(373*2, 373*3, 3, padding=1, groups=373),
-            nn.BatchNorm2d(373*3),
+            nn.Conv2d(373 * 2, 373 * 3, 3, padding=1, groups=373),
+            nn.BatchNorm2d(373 * 3),
             nn.ReLU(),
             nn.Dropout(0.1),
-            nn.MaxPool2d(2,2)
+            nn.MaxPool2d(2, 2),
         )
         conv3 = nn.Sequential(
-            nn.Conv2d(373*3, 373*4, 3, padding=1, groups=373),
-            nn.BatchNorm2d(373*4),
+            nn.Conv2d(373 * 3, 373 * 4, 3, padding=1, groups=373),
+            nn.BatchNorm2d(373 * 4),
             nn.ReLU(),
             nn.Dropout(0.1),
-            nn.MaxPool2d(2,2)
+            nn.MaxPool2d(2, 2),
         )
         t_conv1 = nn.Sequential(
-            nn.ConvTranspose2d(373*4, 373*3, 2, stride=2, groups=373),
-            nn.BatchNorm2d(373*3),
+            nn.ConvTranspose2d(373 * 4, 373 * 3, 2, stride=2, groups=373),
+            nn.BatchNorm2d(373 * 3),
             nn.ReLU(),
         )
         t_conv2 = nn.Sequential(
-            nn.ConvTranspose2d(373*3, 373*2, 2, stride=2, groups=373),
-            nn.BatchNorm2d(373*2),
+            nn.ConvTranspose2d(373 * 3, 373 * 2, 2, stride=2, groups=373),
+            nn.BatchNorm2d(373 * 2),
             nn.ReLU(),
         )
         t_conv3 = nn.Sequential(
-            nn.ConvTranspose2d(373*2, 373*1, 2, stride=2, groups=373),
-            nn.BatchNorm2d(373*1),
+            nn.ConvTranspose2d(373 * 2, 373 * 1, 2, stride=2, groups=373),
+            nn.BatchNorm2d(373 * 1),
             nn.Sigmoid(),
         )
         self.encoder = nn.Sequential(conv1, conv2, conv3)
         self.decoder = nn.Sequential(t_conv1, t_conv2, t_conv3)
         self.encoder2 = nn.Sequential(
-            nn.Conv2d(373*4, 373*1, 3, padding=1, groups=373),
-            nn.BatchNorm2d(373*1),
+            nn.Conv2d(373 * 4, 373 * 1, 3, padding=1, groups=373),
+            nn.BatchNorm2d(373 * 1),
             nn.ReLU(),
             nn.Dropout(0.1),
-            nn.MaxPool2d(8,8),
+            nn.MaxPool2d(8, 8),
         )
         self.classifier = nn.Sequential(
             nn.Flatten(1),
@@ -82,12 +83,11 @@ class ConvAutoencoderGroupsHyp(BaseModel):
         )
 
     def forward(self, x):
-        encoded = self.encoder(x) # encode input hyp image
-        decoded = self.decoder(encoded) # decode to get decoded hyp image
-        encoded2 = self.encoder2(encoded) # further reduce dimension to 448 dim vector
-        pred_class = self.classifier(encoded2) # predict from 448 dim vector
+        encoded = self.encoder(x)  # encode input hyp image
+        decoded = self.decoder(encoded)  # decode to get decoded hyp image
+        encoded2 = self.encoder2(encoded)  # further reduce dimension to 448 dim vector
+        pred_class = self.classifier(encoded2)  # predict from 448 dim vector
         return decoded, encoded2, pred_class
-
 
 
 class ConvNet(BaseModel):
@@ -97,29 +97,40 @@ class ConvNet(BaseModel):
         self.conv2 = self._conv_block(128, 64)
         self.conv3 = self._conv_block(64, 32)
         self.conv4 = self._conv_block(32, 16)
-        self.conv5 = self._conv_block(16, 8)
 
-        self.fc = nn.Sequential(
-            nn.Flatten(1),
-            nn.LazyLinear(1),
-            nn.Sigmoid(),
-        )
+        self.flatten = nn.Flatten(1)
+
+        self.fc1 = self._fc_block(256, 64, activation="relu")
+        self.fc2 = self._fc_block(64, 1, activation="sigmoid")
 
     def _conv_block(self, in_channels, out_channels):
         conv_block = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, 3, padding=1),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            nn.Dropout(0.3),
             nn.MaxPool2d(2, 2),
         )
         return conv_block
+
+    def _fc_block(self, in_channels, out_channels, activation="relu"):
+        if activation == "relu":
+            activation = nn.ReLU()
+        elif activation == "sigmoid":
+            activation = nn.Sigmoid()
+        fc_block = nn.Sequential(
+            nn.Linear(in_channels, out_channels),
+            nn.Dropout(0.1),
+            activation,
+        )
+        return fc_block
 
     def forward(self, x):
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
         x = self.conv4(x)
-        x = self.conv5(x)
-        x = self.fc(x)
+        x = self.flatten(x)
+        x = self.fc1(x)
+        x = self.fc2(x)
         return x
