@@ -5,12 +5,12 @@ import numpy as np
 import torch
 
 import data_loader.data_loaders as module_data
-import model.loss as module_loss
-import model.metric as module_metric
-import model.model as module_arch
-from parse_config import ConfigParser
-from trainer import Trainer
-from utils import prepare_device
+import models_conv.loss as module_loss
+import models_conv.metric as module_metric
+import models_conv.model as module_arch
+from models_conv.trainer import Trainer
+from utils.parse_config import ConfigParser
+from utils.utils import prepare_device
 
 # fix random seeds for reproducibility
 SEED = 123

@@ -9,12 +9,13 @@
         "type": "HypDataLoader",
         "args": {
             "data_dir": "C:\\Users\\janezla\\Documents\\DATA\\ana_converted\\slikanje_2022_rad_4",
+            "dataset": "PlantsDataset",
             "data_sampler": "RandomSampler15",
             "grouped_labels_filepath": "grouped_labels\\groups_krka.xlsx",
             "batch_size": 32,
             "shuffle": true,
             "validation_split": 0.2,
-            "num_workers": 2
+            "num_workers": 4
         }
     },
     "optimizer": {

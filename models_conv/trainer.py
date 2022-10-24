@@ -2,10 +2,10 @@ from abc import abstractmethod
 
 import numpy as np
 import torch
-from utils import TensorboardWriter
 from numpy import inf
 from torchvision.utils import make_grid
-from utils import MetricTracker, inf_loop
+from utils.tensor_board_writer import TensorboardWriter
+from utils.utils import MetricTracker, inf_loop
 
 
 class BaseTrainer:

@@ -7,10 +7,10 @@ import torch
 from tqdm import tqdm
 
 import data_loader.data_loaders as module_data
-import model.loss as module_loss
-import model.metric as module_metric
-import model.model as module_arch
-from parse_config import ConfigParser
+import models_conv.loss as module_loss
+import models_conv.metric as module_metric
+import models_conv.model as module_arch
+from utils.parse_config import ConfigParser
 
 
 def main(config):
@@ -19,6 +19,7 @@ def main(config):
     # setup data_loader instances
     data_loader = getattr(module_data, config['data_loader']['type'])(
         config['data_loader']['args']['data_dir'],
+        config['data_loader']['args']['dataset'],
         config['data_loader']['args']['data_sampler'],
         config['data_loader']['args']['grouped_labels_filepath'],
         batch_size=1,
