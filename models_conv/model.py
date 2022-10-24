@@ -28,67 +28,6 @@ class BaseModel(nn.Module):
         return super().__str__() + "\nTrainable parameters: {}".format(params)
 
 
-class ConvAutoencoderGroupsHyp(BaseModel):
-    def __init__(self):
-        super().__init__()
-        conv1 = nn.Sequential(
-            nn.Conv2d(373 * 1, 373 * 2, 3, padding=1, groups=373),
-            nn.BatchNorm2d(373 * 2),
-            nn.ReLU(),
-            # nn.Dropout(0.1),
-            nn.MaxPool2d(2, 2),
-        )
-        conv2 = nn.Sequential(
-            nn.Conv2d(373 * 2, 373 * 3, 3, padding=1, groups=373),
-            nn.BatchNorm2d(373 * 3),
-            nn.ReLU(),
-            nn.Dropout(0.1),
-            nn.MaxPool2d(2, 2),
-        )
-        conv3 = nn.Sequential(
-            nn.Conv2d(373 * 3, 373 * 4, 3, padding=1, groups=373),
-            nn.BatchNorm2d(373 * 4),
-            nn.ReLU(),
-            nn.Dropout(0.1),
-            nn.MaxPool2d(2, 2),
-        )
-        t_conv1 = nn.Sequential(
-            nn.ConvTranspose2d(373 * 4, 373 * 3, 2, stride=2, groups=373),
-            nn.BatchNorm2d(373 * 3),
-            nn.ReLU(),
-        )
-        t_conv2 = nn.Sequential(
-            nn.ConvTranspose2d(373 * 3, 373 * 2, 2, stride=2, groups=373),
-            nn.BatchNorm2d(373 * 2),
-            nn.ReLU(),
-        )
-        t_conv3 = nn.Sequential(
-            nn.ConvTranspose2d(373 * 2, 373 * 1, 2, stride=2, groups=373),
-            nn.BatchNorm2d(373 * 1),
-            nn.Sigmoid(),
-        )
-        self.encoder = nn.Sequential(conv1, conv2, conv3)
-        self.decoder = nn.Sequential(t_conv1, t_conv2, t_conv3)
-        self.encoder2 = nn.Sequential(
-            nn.Conv2d(373 * 4, 373 * 1, 3, padding=1, groups=373),
-            nn.BatchNorm2d(373 * 1),
-            nn.ReLU(),
-            nn.Dropout(0.1),
-            nn.MaxPool2d(8, 8),
-        )
-        self.classifier = nn.Sequential(
-            nn.Flatten(1),
-            nn.Linear(373, 1),
-            nn.Sigmoid(),
-        )
-
-    def forward(self, x):
-        encoded = self.encoder(x)  # encode input hyp image
-        decoded = self.decoder(encoded)  # decode to get decoded hyp image
-        encoded2 = self.encoder2(encoded)  # further reduce dimension to 448 dim vector
-        pred_class = self.classifier(encoded2)  # predict from 448 dim vector
-        return decoded, encoded2, pred_class
-
 
 class ConvNet(BaseModel):
     def __init__(self):
