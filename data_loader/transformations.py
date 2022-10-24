@@ -74,3 +74,8 @@ class AreaNormalization:
             return signal
         return signal / area
 
+
+class NoTransformation:
+    def __call__(self, image):
+        return image
+

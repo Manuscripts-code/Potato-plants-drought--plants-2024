@@ -9,35 +9,41 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 
 from .sp_image import SPImage
-from .transformations import (AddGaussianNoise, AreaNormalization, RandomCrop,
-                              RandomMirror)
+from .transformations import (AddGaussianNoise, AreaNormalization,
+                              NoTransformation, RandomCrop, RandomMirror)
+
+# hardcoded bands to remove
+NOISY_BANDS = np.concatenate([np.arange(26), np.arange(140, 171), np.arange(430, 448)])
 
 
 class PlantsDataset(Dataset):
     def __init__(self, data_dir, data_sampler, grouped_labels_filepath, training):
         self.train = training
-        self.transform_train = transforms.Compose(
-            [
-                # AddGaussianNoise(0.001, 0.002),
-                RandomMirror(),
-                # AreaNormalization(),
-                transforms.ToTensor(),
-            ]
-        )
-        self.transform_test = transforms.Compose(
-            [
-                transforms.ToTensor(),
-            ]
-        )
-
-        # hardcoded bands to remove
-        self.NOISY_BANDS = np.concatenate(
-            [np.arange(26), np.arange(140, 171), np.arange(430, 448)]
-        )
+        (
+            self.transform_train,
+            self.transform_test,
+            self.transform_during_loading,
+        ) = self._init_transform()
 
         images, labels, classes = self._read_data(data_dir, grouped_labels_filepath)
         # get data based on whether it is training or testing run
         self.images, self.classes = data_sampler.sample(images, labels, classes)
+
+    def _init_transform(self):
+        transform_train = transforms.Compose(
+            [
+                RandomMirror(),
+                transforms.ToTensor(),
+            ]
+        )
+        transform_test = transforms.Compose(
+            [
+                transforms.ToTensor(),
+            ]
+        )
+        transform_during_loading = transforms.Compose([AreaNormalization()])
+        # transform_during_loading = transforms.Compose([NoTransformation()])
+        return transform_train, transform_test, transform_during_loading
 
     def _read_data(self, data_dir, grouped_labels_filepath):
         data_dir_path = Path(data_dir)
@@ -51,7 +57,6 @@ class PlantsDataset(Dataset):
         images = []
         classes = []
         labels = []
-        area_normalize = AreaNormalization()
         for path in track(images_paths, description="Loading images..."):
             image = SPImage(sp.envi.open(path))
             image_label = image.label
@@ -61,12 +66,12 @@ class PlantsDataset(Dataset):
 
             image_group = groups[groups.labels == image_label].groups_encoded.iloc[0]
 
-            # convect image to array and replace nans with zeros
+            # convert image to array and replace nans with zeros
             image_arr = np.nan_to_num(image.to_numpy())
+            # remove noisy channels
+            image_arr = np.delete(image_arr, NOISY_BANDS, axis=2)
             # normalize by area under the signal
-            image_arr = area_normalize(image_arr)
-            # and remove noisy channels
-            image_arr = np.delete(image_arr, self.NOISY_BANDS, axis=2)
+            image_arr = self.transform_during_loading(image_arr)
 
             images.append(image_arr)
             labels.append(image_label)
