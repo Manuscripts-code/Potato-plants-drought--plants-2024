@@ -25,24 +25,22 @@ class ParseConfig:
         self.resume = resume
 
         # set save_dir where trained model and log will be saved.
-        save_dir = Path(self.config["trainer"]["save_dir"])
+        save_dir = Path(self.config["save_dir"])
 
         exper_name = self.config["name"]
         if run_id is None:  # use timestamp as default run-id
             run_id = datetime.now().strftime(r"%m%d_%H%M%S")
-        self._save_dir = save_dir / "models" / exper_name / run_id
-        self._log_dir = save_dir / "log" / exper_name / run_id
+        self._save_dir = save_dir / exper_name / run_id
 
         # make directory for saving checkpoints and log.
         exist_ok = run_id == ""
         self.save_dir.mkdir(parents=True, exist_ok=exist_ok)
-        self.log_dir.mkdir(parents=True, exist_ok=exist_ok)
 
         # save updated config file to the checkpoint dir
         write_json(self.config, self.save_dir / "config.json")
 
         # configure logging module
-        setup_logging(self.log_dir)
+        setup_logging(self.save_dir)
         self.log_levels = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
 
     @classmethod
@@ -72,9 +70,7 @@ class ParseConfig:
             config.update(read_json(args.config))
 
         # parse custom cli options into dictionary
-        modification = {
-            opt.target: getattr(args, _get_opt_name(opt.flags)) for opt in options
-        }
+        modification = {opt.target: getattr(args, _get_opt_name(opt.flags)) for opt in options}
         return cls(config, resume, modification)
 
     def init_obj(self, name, module, *args, **kwargs):
@@ -88,9 +84,7 @@ class ParseConfig:
         """
         module_name = self[name]["type"]
         module_args = dict(self[name]["args"])
-        assert all(
-            [k not in module_args for k in kwargs]
-        ), "Overwriting kwargs given in config file is not allowed"
+        assert all([k not in module_args for k in kwargs]), "Overwriting kwargs given in config file is not allowed"
         module_args.update(kwargs)
         return getattr(module, module_name)(*args, **module_args)
 
@@ -105,11 +99,13 @@ class ParseConfig:
         """
         module_name = self[name]["type"]
         module_args = dict(self[name]["args"])
-        assert all(
-            [k not in module_args for k in kwargs]
-        ), "Overwriting kwargs given in config file is not allowed"
+        assert all([k not in module_args for k in kwargs]), "Overwriting kwargs given in config file is not allowed"
         module_args.update(kwargs)
         return partial(getattr(module, module_name), *args, **module_args)
+
+    def import_module(self, name, module):
+        name = self[name]
+        return getattr(module, name)
 
     def __getitem__(self, name):
         """Access items like ordinary dict."""
@@ -132,10 +128,6 @@ class ParseConfig:
     @property
     def save_dir(self):
         return self._save_dir
-
-    @property
-    def log_dir(self):
-        return self._log_dir
 
 
 # helper functions to update config dict with custom cli options

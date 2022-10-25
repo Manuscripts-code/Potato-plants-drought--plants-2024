@@ -87,7 +87,7 @@ def main(config):
 
 
 if __name__ == "__main__":
-    args = argparse.ArgumentParser(description="PyTorch Template")
+    args = argparse.ArgumentParser(description="Test convolutional model")
     args.add_argument(
         "-c",
         "--config",

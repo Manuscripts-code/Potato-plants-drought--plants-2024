@@ -46,7 +46,7 @@ class BaseTrainer:
 
         # setup visualization writer instance
         self.writer = TensorboardWriter(
-            config.log_dir, self.logger, cfg_trainer["tensorboard"]
+            config.save_dir, self.logger, cfg_trainer["tensorboard"]
         )
 
         if config.resume is not None:

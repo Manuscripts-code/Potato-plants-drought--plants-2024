@@ -1,5 +1,5 @@
 {
-    "name": "Potato_plants",
+    "name": "CNN",
     "n_gpu": 1,
     "arch": {
         "type": "ConvNet",
@@ -39,11 +39,11 @@
     },
     "trainer": {
         "epochs": 100,
-        "save_dir": "saved/",
         "save_period": 1,
         "verbosity": 2,
         "monitor": "min val_loss",
         "early_stop": 30,
         "tensorboard": true
-    }
+    },
+    "save_dir": "saved/"
 }
