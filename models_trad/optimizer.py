@@ -1,6 +1,7 @@
 import os
 import pickle
 from abc import abstractmethod
+from functools import partial
 from types import SimpleNamespace
 
 import numpy as np
@@ -16,15 +17,17 @@ from sklearn.metrics import (
     classification_report,
     mean_absolute_error,
 )
-from sklearn.model_selection import cross_val_score
 from sklearn.utils import shuffle
+
+from .scorer import make_scorer_ftn, objective_cv, objective_split
 
 
 class BaseOptimizer:
     def __init__(self, model, config):
         self.logger = config.get_logger("trainer", verbosity=2)
         self.model = model
-        self.mode, self.scoring = config["score"].split()
+        self.scoring_metric = config["scoring_metric"]
+        self.scoring_mode = config["scoring_mode"]
         self.tuned_params = self._modify_params(config)
         self.debug = config["debug"]
         self.num_samples = config["num_samples"]
@@ -41,12 +44,12 @@ class BaseOptimizer:
             self._debug_false()
 
     def _debug_false(self):
-        analysis = self.perform_search()
-        train_report = self.create_train_report(analysis)
-        self.model.set_params(**analysis.best_config)
+        results = self.perform_search()
+        results = self.create_train_report(results)
+        self.model.set_params(**results.config)
         self.model.fit(self.data.X_train, self.data.y_train)
         self.save_model(self.model)
-        self.save_report(train_report, "report_train.txt")
+        # self.save_report(train_report, "report_train.txt")
 
     def save_model(self, model):
         save_path = os.path.join(self.save_dir, "model.pkl")
@@ -97,11 +100,6 @@ class BaseOptimizer:
         """Seach of hyperparameters implemented here"""
         raise NotImplementedError
 
-    @abstractmethod
-    def trainable(self):
-        """Should evaluate objective function used in perform search"""
-        raise NotImplementedError
-
 
 class OptimizerClassification(BaseOptimizer):
     def __init__(self, model, data_loader, valid_data_loader, validator, config):
@@ -109,7 +107,7 @@ class OptimizerClassification(BaseOptimizer):
         self.data_loader = data_loader
         self.valid_data_loader = valid_data_loader
         self.validator = validator
-        self.best_config = None
+        self.scorer = None
 
     def load_data(self):
         X_train, y_train = self.convert_images_to_1d(self.data_loader)
@@ -133,11 +131,33 @@ class OptimizerClassification(BaseOptimizer):
             [y.append(tar) for tar in targets]
         return X, y
 
+    def init_scorer(self):
+        if self.data.X_valid is None:
+            scoring_metric = make_scorer_ftn(self.scoring_metric, init=False)
+            self.scorer = partial(
+                objective_cv,
+                X_data=self.data.X_train,
+                y_data=self.data.y_train,
+                validator=self.validator,
+                scoring_metric=scoring_metric,
+            )
+        else:
+            scoring_metric_ftn = make_scorer_ftn(self.scoring_metric, init=True)
+            self.scorer = partial(
+                objective_split,
+                X_train=self.data.X_train,
+                y_train=self.data.y_train,
+                X_valid=self.data.X_valid,
+                y_valid=self.data.y_valid,
+                scoring_metric_ftn=scoring_metric_ftn,
+            )
+
     def perform_search(self):
+        self.init_scorer()
         search_alg = HyperOptSearch()
         scheduler = HyperBandScheduler()
         tune_config = tune.TuneConfig(
-            mode=self.mode,
+            mode=self.scoring_mode,
             search_alg=search_alg,
             scheduler=scheduler,
             num_samples=self.num_samples,
@@ -152,38 +172,22 @@ class OptimizerClassification(BaseOptimizer):
             run_config=run_config,
         )
         results = tuner.fit()
-        self.best_config = results.get_best_result(metric=self.scoring, mode=self.mode).config
         return results
 
     def trainable(self, config):
         score = self.objective(config)
-        session.report({self.scoring: score, "_metric": score})
+        session.report({self.scoring_metric: score, "_metric": score})
 
     def objective(self, config):
         self.model.set_params(**config)
-        score = cross_val_score(
-            self.model,
-            self.data.X_train,
-            self.data.y_train,
-            cv=self.validator,
-            error_score=0,
-            n_jobs=1,
-            pre_dispatch=1,
-            scoring=self.scoring,
-        )
-        return score.mean()
+        return self.scorer(self.model)
 
     def create_train_report(self, results):
-        print(results.get_dataframe())
-        print(self.best_config)
-
-        quit()
-        return ""
-        # train_report = f" Best hyperparameters found were: {results.best_config}"
-        # train_report += f"\n\n Best results all: {results.best_result}"
-        # train_report += f"\n\n Best accuracy: {results.best_result['mean_accuracy']}\n"
-        # print(train_report)
-
-        # self.save_report(str(results.best_result["mean_accuracy"]), "accuracy_train.txt")
-
-        # return train_report
+        best_results = results.get_best_result(metric=self.scoring_metric, mode=self.scoring_mode)
+        self.logger.info(f"Best hyperparameters found were: {best_results.config}")
+        self.logger.info(f"Best results all: {best_results.metrics}")
+        self.logger.info(
+            f"Best {self.scoring_metric}: {best_results.metrics[self.scoring_metric]}\n"
+        )
+        self.save_report(str(best_results.metrics[self.scoring_metric]), "scoring_train.txt")
+        return best_results
