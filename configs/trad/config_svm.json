@@ -1,0 +1,46 @@
+{
+    "name": "SVC",
+
+    "model": {
+        "type": "Model",
+        "args": {
+            "pipeline": ["SVC"],
+            "unions": {
+            }
+        }
+    },
+    "data_loader": {
+        "type": "HypDataLoader",
+        "args": {
+            "data_dir": "C:\\Users\\janezla\\Documents\\DATA\\ana_converted\\slikanje_2022_rad_4_reduced",
+            "dataset": "PlantsDataset",
+            "data_sampler": "RandomSampler15",
+            "grouped_labels_filepath": "grouped_labels\\groups_krka.xlsx",
+            "batch_size": 4,
+            "shuffle": true,
+            "validation_split": 0.0,
+            "num_workers": 4
+        }
+    },
+    "tuned_parameters":{
+                        "SVC__kernel": ["CHOICE", "rbf", "sigmoid"],
+                        "SVC__gamma": ["LOG_UNIFORM", 1e-7, 1],
+                        "SVC__C": ["LOG_UNIFORM", 1, 10000]
+                    },
+
+    "optimizer": "OptimizerClassification",
+    "validation": {
+        "type": "RepeatedStratifiedKFold",
+        "args": {
+            "n_splits": 5,
+            "n_repeats": 3,
+            "random_state": 1
+        }
+    },
+
+    "num_samples": 200,
+    "scoring_metrics": "balanced_accuracy",
+    "scoring_mode": "max",
+    "debug": false,
+    "save_dir": "saved/"
+}
