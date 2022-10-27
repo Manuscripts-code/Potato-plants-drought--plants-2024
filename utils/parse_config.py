@@ -1,4 +1,3 @@
-import logging
 import os
 from datetime import datetime
 from functools import partial, reduce
@@ -7,7 +6,7 @@ from pathlib import Path
 
 from utils.utils import read_json, write_json
 
-from .logger import setup_logging
+from .logger import get_logging, setup_logging
 
 
 class ParseConfig:
@@ -41,7 +40,6 @@ class ParseConfig:
 
         # configure logging module
         setup_logging(self.save_dir)
-        self.log_levels = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
 
     @classmethod
     def from_args(cls, args, options=""):
@@ -59,7 +57,9 @@ class ParseConfig:
             resume = Path(args.resume)
             cfg_fname = resume / "config.json"
         else:
-            msg_no_cfg = "Configuration file need to be specified. Add '-c config.json', for example."
+            msg_no_cfg = (
+                "Configuration file need to be specified. Add '-c config.json', for example."
+            )
             assert args.config is not None, msg_no_cfg
             resume = None
             cfg_fname = Path(args.config)
@@ -84,7 +84,9 @@ class ParseConfig:
         """
         module_name = self[name]["type"]
         module_args = dict(self[name]["args"])
-        assert all([k not in module_args for k in kwargs]), "Overwriting kwargs given in config file is not allowed"
+        assert all(
+            [k not in module_args for k in kwargs]
+        ), "Overwriting kwargs given in config file is not allowed"
         module_args.update(kwargs)
         return getattr(module, module_name)(*args, **module_args)
 
@@ -99,7 +101,9 @@ class ParseConfig:
         """
         module_name = self[name]["type"]
         module_args = dict(self[name]["args"])
-        assert all([k not in module_args for k in kwargs]), "Overwriting kwargs given in config file is not allowed"
+        assert all(
+            [k not in module_args for k in kwargs]
+        ), "Overwriting kwargs given in config file is not allowed"
         module_args.update(kwargs)
         return partial(getattr(module, module_name), *args, **module_args)
 
@@ -112,13 +116,7 @@ class ParseConfig:
         return self.config[name]
 
     def get_logger(self, name, verbosity=2):
-        msg_verbosity = "verbosity option {} is invalid. Valid options are {}.".format(
-            verbosity, self.log_levels.keys()
-        )
-        assert verbosity in self.log_levels, msg_verbosity
-        logger = logging.getLogger(name)
-        logger.setLevel(self.log_levels[verbosity])
-        return logger
+        return get_logging(name, verbosity=verbosity)
 
     # setting read-only attributes
     @property
