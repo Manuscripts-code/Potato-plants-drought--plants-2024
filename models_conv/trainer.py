@@ -45,9 +45,7 @@ class BaseTrainer:
         self.checkpoint_dir = config.save_dir
 
         # setup visualization writer instance
-        self.writer = TensorboardWriter(
-            config.save_dir, self.logger, cfg_trainer["tensorboard"]
-        )
+        self.writer = TensorboardWriter(config.save_dir, self.logger, cfg_trainer["tensorboard"])
 
         if config.resume is not None:
             self._resume_checkpoint(config.resume)
@@ -84,15 +82,11 @@ class BaseTrainer:
                     # check whether model performance improved or not, according to specified metric(mnt_metric)
                     improved = (
                         self.mnt_mode == "min" and log[self.mnt_metric] <= self.mnt_best
-                    ) or (
-                        self.mnt_mode == "max" and log[self.mnt_metric] >= self.mnt_best
-                    )
+                    ) or (self.mnt_mode == "max" and log[self.mnt_metric] >= self.mnt_best)
                 except KeyError:
                     self.logger.warning(
                         "Warning: Metric '{}' is not found. "
-                        "Model performance monitoring is disabled.".format(
-                            self.mnt_metric
-                        )
+                        "Model performance monitoring is disabled.".format(self.mnt_metric)
                     )
                     self.mnt_mode = "off"
                     improved = False
@@ -160,10 +154,7 @@ class BaseTrainer:
         self.model.load_state_dict(checkpoint["state_dict"])
 
         # load optimizer state from checkpoint only when optimizer type is not changed.
-        if (
-            checkpoint["config"]["optimizer"]["type"]
-            != self.config["optimizer"]["type"]
-        ):
+        if checkpoint["config"]["optimizer"]["type"] != self.config["optimizer"]["type"]:
             self.logger.warning(
                 "Warning: Optimizer type given in config file is different from that of checkpoint. "
                 "Optimizer parameters not being resumed."
@@ -227,8 +218,11 @@ class Trainer(BaseTrainer):
         self.model.train()
         self.train_metrics.reset()
         for batch_idx, (data, target) in enumerate(self.data_loader):
-            data, target = data.to(self.device), target.to(self.device)
+            # replace nans with zeros
+            data = torch.nan_to_num(data)
+            # convert to column vector
             target = target.view(len(target), -1).float()
+            data, target = data.to(self.device), target.to(self.device)
 
             self.optimizer.zero_grad()
             pred_class = self.model(data)
@@ -271,15 +265,16 @@ class Trainer(BaseTrainer):
         self.valid_metrics.reset()
         with torch.no_grad():
             for batch_idx, (data, target) in enumerate(self.valid_data_loader):
-                data, target = data.to(self.device), target.to(self.device)
+                # replace nans with zeros
+                data = torch.nan_to_num(data)
+                # convert to column vector
                 target = target.view(len(target), -1).float()
+                data, target = data.to(self.device), target.to(self.device)
 
                 pred_class = self.model(data)
                 loss = self.criterion(pred_class, target)  # classification loss
 
-                self.writer.set_step(
-                    (epoch - 1) * len(self.valid_data_loader) + batch_idx, "valid"
-                )
+                self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, "valid")
                 self.valid_metrics.update("loss", loss.item())
                 for met in self.metric_ftns:
                     self.valid_metrics.update(met.__name__, met(pred_class, target))

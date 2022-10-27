@@ -42,7 +42,7 @@ class PlantsDataset(Dataset):
             ]
         )
         transform_during_loading = transforms.Compose([AreaNormalization()])
-        # transform_during_loading = transforms.Compose([NoTransformation()])
+        transform_during_loading = transforms.Compose([NoTransformation()])
         return transform_train, transform_test, transform_during_loading
 
     def _read_data(self, data_dir, grouped_labels_filepath):
@@ -66,8 +66,9 @@ class PlantsDataset(Dataset):
 
             image_group = groups[groups.labels == image_label].groups_encoded.iloc[0]
 
-            # convert image to array and replace nans with zeros
-            image_arr = np.nan_to_num(image.to_numpy())
+            # convert image to array 
+            image_arr = image.to_numpy()
+            # TODO: cap between 0 and 1
             # remove noisy channels
             image_arr = np.delete(image_arr, NOISY_BANDS, axis=2)
             # normalize by area under the signal

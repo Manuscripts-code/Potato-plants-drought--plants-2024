@@ -129,8 +129,8 @@ class OptimizerClassification(BaseOptimizer):
             return None, None
         X, y = [], []
         for images, targets in track(data_loader, description="Converting images..."):
-            # average spatial dimension of images
-            signatures = images.mean((2, 3)).numpy()
+            # average spatial dimension of images (only not nan values)
+            signatures = images.nanmean((2, 3)).numpy()
             targets = targets.numpy()
             [X.append(sig) for sig in signatures]
             [y.append(tar) for tar in targets]
