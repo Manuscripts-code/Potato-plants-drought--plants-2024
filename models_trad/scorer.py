@@ -10,7 +10,7 @@ AVAILABLE_SCORING_METRICS = {
 def make_scorer_ftn(scoring_metric, init=True):
     if scoring_metric not in AVAILABLE_SCORING_METRICS.keys():
         raise Exception(
-            f"Scoring metric {scoring_metric} not available. Possible options: {AVAILABLE_SCORING_METRICS}"
+            f"Scoring metric {scoring_metric} not available. Possible options: {list(AVAILABLE_SCORING_METRICS.keys())}"
         )
     if not init:
         return scoring_metric

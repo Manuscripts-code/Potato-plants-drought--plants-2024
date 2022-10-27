@@ -11,13 +11,6 @@ from ray.air.config import RunConfig, ScalingConfig
 from ray.tune.schedulers import AsyncHyperBandScheduler, HyperBandScheduler
 from ray.tune.search.hyperopt import HyperOptSearch
 from rich.progress import track
-from sklearn.metrics import (
-    accuracy_score,
-    balanced_accuracy_score,
-    classification_report,
-    mean_absolute_error,
-)
-from sklearn.utils import shuffle
 
 from .scorer import make_scorer_ftn, objective_cv, objective_split
 
@@ -44,17 +37,24 @@ class BaseOptimizer:
             self._debug_false()
 
     def _debug_false(self):
-        results = self.perform_search()
-        results = self.create_train_report(results)
-        self.model.set_params(**results.config)
-        self.model.fit(self.data.X_train, self.data.y_train)
-        self.save_model(self.model)
-        # self.save_report(train_report, "report_train.txt")
+        results, best_results = self.perform_search()
+        self._create_train_report(results, best_results)
+        self._refit_model(best_results.config)
+        self._save_model()
 
-    def save_model(self, model):
+    def _save_model(self):
         save_path = os.path.join(self.save_dir, "model.pkl")
         with open(save_path, "wb") as f:
-            pickle.dump(model, f)
+            pickle.dump(self.model, f)
+
+    def _refit_model(self, best_config):
+        X_data, y_data = self.data.X_train, self.data.y_train
+        if self.data.X_valid is not None:
+            X_data += self.data.X_valid
+            y_data += self.data.y_valid
+
+        self.model.set_params(**best_config)
+        self.model.fit(X_data, y_data)
 
     def load_model(self):
         load_path = os.path.join(self.save_dir, "model.pkl")
@@ -63,10 +63,24 @@ class BaseOptimizer:
             print(model)
         return model
 
-    def save_report(self, report, name_txt):
+    def _save_report(self, report, name_txt):
+        report = str(report)
         save_path = os.path.join(self.save_dir, name_txt)
         with open(save_path, "w") as text_file:
             text_file.write(report)
+
+    def _create_train_report(self, results, best_results):
+        best_config = best_results.config
+        best_metric = best_results.metrics[self.scoring_metric]
+        best_all_params = best_results.metrics
+        all_df = results.get_dataframe().to_string()
+
+        self.logger.info(f"Best hyperparameters found were: {best_config}")
+        self.logger.info(f"Best {self.scoring_metric}: {best_metric}\n")
+        self._save_report(best_config, "best_config_train.txt")
+        self._save_report(best_metric, "best_metric_train.txt")
+        self._save_report(best_all_params, "best_all_params_train.txt")
+        self._save_report(all_df, "all_df_train.txt")
 
     @staticmethod
     def _modify_params(config):
@@ -86,15 +100,6 @@ class BaseOptimizer:
 
         return tuned_parameters
 
-    def create_train_report(self, analysis):
-        """Should return report from training"""
-        return "Train report not configured."
-
-    @abstractmethod
-    def load_data(self):
-        """Load of data implemented here"""
-        raise NotImplementedError
-
     @abstractmethod
     def perform_search(self):
         """Seach of hyperparameters implemented here"""
@@ -110,8 +115,8 @@ class OptimizerClassification(BaseOptimizer):
         self.scorer = None
 
     def load_data(self):
-        X_train, y_train = self.convert_images_to_1d(self.data_loader)
-        X_valid, y_valid = self.convert_images_to_1d(self.valid_data_loader)
+        X_train, y_train = self._convert_images_to_1d(self.data_loader)
+        X_valid, y_valid = self._convert_images_to_1d(self.valid_data_loader)
         # create data structure i.e.: self.data.X_train, self.data.y_train, etc.
         self.data = SimpleNamespace(
             X_train=X_train, y_train=y_train, X_valid=X_valid, y_valid=y_valid
@@ -119,7 +124,7 @@ class OptimizerClassification(BaseOptimizer):
         self.data_loader = None
         self.valid_data_loader = None
 
-    def convert_images_to_1d(self, data_loader):
+    def _convert_images_to_1d(self, data_loader):
         if data_loader is None:
             return None, None
         X, y = [], []
@@ -131,7 +136,7 @@ class OptimizerClassification(BaseOptimizer):
             [y.append(tar) for tar in targets]
         return X, y
 
-    def init_scorer(self):
+    def _init_scorer(self):
         if self.data.X_valid is None:
             scoring_metric = make_scorer_ftn(self.scoring_metric, init=False)
             self.scorer = partial(
@@ -153,7 +158,7 @@ class OptimizerClassification(BaseOptimizer):
             )
 
     def perform_search(self):
-        self.init_scorer()
+        self._init_scorer()
         search_alg = HyperOptSearch()
         scheduler = HyperBandScheduler()
         tune_config = tune.TuneConfig(
@@ -166,28 +171,19 @@ class OptimizerClassification(BaseOptimizer):
             name=self.name,
         )
         tuner = tune.Tuner(
-            trainable=self.trainable,
+            trainable=self._trainable,
             param_space=self.tuned_params,
             tune_config=tune_config,
             run_config=run_config,
         )
         results = tuner.fit()
-        return results
+        best_results = results.get_best_result(metric=self.scoring_metric, mode=self.scoring_mode)
+        return results, best_results
 
-    def trainable(self, config):
-        score = self.objective(config)
+    def _trainable(self, config):
+        score = self._objective(config)
         session.report({self.scoring_metric: score, "_metric": score})
 
-    def objective(self, config):
+    def _objective(self, config):
         self.model.set_params(**config)
         return self.scorer(self.model)
-
-    def create_train_report(self, results):
-        best_results = results.get_best_result(metric=self.scoring_metric, mode=self.scoring_mode)
-        self.logger.info(f"Best hyperparameters found were: {best_results.config}")
-        self.logger.info(f"Best results all: {best_results.metrics}")
-        self.logger.info(
-            f"Best {self.scoring_metric}: {best_results.metrics[self.scoring_metric]}\n"
-        )
-        self.save_report(str(best_results.metrics[self.scoring_metric]), "scoring_train.txt")
-        return best_results
