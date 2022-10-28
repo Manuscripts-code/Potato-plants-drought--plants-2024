@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from rich.progress import track
+from sklearn.metrics import classification_report
 from tqdm import tqdm
 
 import data_loader.data_loaders as module_data
@@ -65,8 +66,8 @@ def main(config):
 
             pred_class = model(data)
             loss = loss_fn(pred_class, target)
-            # target_list.append(target)
-            # pred_list.append(pred_class)
+            target_list.append(target.cpu().numpy())
+            pred_list.append(pred_class.cpu().numpy())
 
             # computing loss, metrics on test set
             batch_size = data.shape[0]
@@ -76,18 +77,12 @@ def main(config):
 
     n_samples = len(data_loader.sampler)
     log = {"loss": total_loss / n_samples}
-    log.update(
-        {
-            met.__name__: total_metrics[i].item() / n_samples
-            for i, met in enumerate(metric_fns)
-        }
-    )
+    log.update({met.__name__: total_metrics[i].item() / n_samples for i, met in enumerate(metric_fns)})
     logger.info(log)
-
-    # for t, p in zip(target_list, pred_list):
-    #     t_ = t[0][0].cpu().numpy()
-    #     p_ = round(p[0][0].cpu().numpy().round())
-    #     print(t_,p_)
+    logger.info(
+        f"Classification report on test data:\n"
+        f"{classification_report(np.array(target_list).flatten(), np.array(pred_list).flatten().round())}"
+    )
 
 
 if __name__ == "__main__":

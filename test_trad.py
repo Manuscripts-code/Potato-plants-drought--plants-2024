@@ -37,7 +37,7 @@ def main(config):
     logger.info(model)
 
     y_pred = model.predict(X_test)
-    logger.info(f"Classification repot on test data:\n{classification_report(y_test, y_pred)}")
+    logger.info(f"Classification report on test data:\n{classification_report(y_test, y_pred)}")
 
 
 if __name__ == "__main__":
