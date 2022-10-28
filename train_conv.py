@@ -8,9 +8,9 @@ import data_loader.data_loaders as module_data
 import models_conv.loss as module_loss
 import models_conv.metric as module_metric
 import models_conv.model as module_arch
+from models_conv.helpers import prepare_device
 from models_conv.trainer import Trainer
 from utils.parse_config import ParseConfig
-from utils.utils import prepare_device
 
 # fix random seeds for reproducibility
 SEED = 123
@@ -89,9 +89,7 @@ if __name__ == "__main__":
     CustomArgs = collections.namedtuple("CustomArgs", "flags type target")
     options = [
         CustomArgs(["--lr", "--learning_rate"], type=float, target="optimizer;args;lr"),
-        CustomArgs(
-            ["--bs", "--batch_size"], type=int, target="data_loader;args;batch_size"
-        ),
+        CustomArgs(["--bs", "--batch_size"], type=int, target="data_loader;args;batch_size"),
     ]
     config = ParseConfig.from_args(args, options)
     main(config)

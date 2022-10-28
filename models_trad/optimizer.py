@@ -1,5 +1,4 @@
 import os
-import pickle
 from abc import abstractmethod
 from functools import partial
 from types import SimpleNamespace
@@ -10,8 +9,9 @@ from ray.air import session
 from ray.air.config import RunConfig, ScalingConfig
 from ray.tune.schedulers import AsyncHyperBandScheduler, HyperBandScheduler
 from ray.tune.search.hyperopt import HyperOptSearch
-from rich.progress import track
+from utils.utils import write_txt, write_pickle
 
+from .helpers import convert_images_to_1d
 from .scorer import make_scorer_ftn, objective_cv, objective_split
 
 
@@ -42,11 +42,6 @@ class BaseOptimizer:
         self._refit_model(best_results.config)
         self._save_model()
 
-    def _save_model(self):
-        save_path = os.path.join(self.save_dir, "model.pkl")
-        with open(save_path, "wb") as f:
-            pickle.dump(self.model, f)
-
     def _refit_model(self, best_config):
         X_data, y_data = self.data.X_train, self.data.y_train
         if self.data.X_valid is not None:
@@ -56,18 +51,13 @@ class BaseOptimizer:
         self.model.set_params(**best_config)
         self.model.fit(X_data, y_data)
 
-    def load_model(self):
-        load_path = os.path.join(self.save_dir, "model.pkl")
-        with open(load_path, "rb") as f:
-            model = pickle.load(f)
-            print(model)
-        return model
+    def _save_model(self):
+        write_pickle(self.model, self.save_dir / "model.pkl")
 
     def _save_report(self, report, name_txt):
         report = str(report)
         save_path = os.path.join(self.save_dir, name_txt)
-        with open(save_path, "w") as text_file:
-            text_file.write(report)
+        write_txt(report, save_path)
 
     def _create_train_report(self, results, best_results):
         best_config = best_results.config
@@ -115,47 +105,14 @@ class OptimizerClassification(BaseOptimizer):
         self.scorer = None
 
     def load_data(self):
-        X_train, y_train = self._convert_images_to_1d(self.data_loader)
-        X_valid, y_valid = self._convert_images_to_1d(self.valid_data_loader)
+        X_train, y_train = convert_images_to_1d(self.data_loader)
+        X_valid, y_valid = convert_images_to_1d(self.valid_data_loader)
         # create data structure i.e.: self.data.X_train, self.data.y_train, etc.
         self.data = SimpleNamespace(
             X_train=X_train, y_train=y_train, X_valid=X_valid, y_valid=y_valid
         )
         self.data_loader = None
         self.valid_data_loader = None
-
-    def _convert_images_to_1d(self, data_loader):
-        if data_loader is None:
-            return None, None
-        X, y = [], []
-        for images, targets in track(data_loader, description="Converting images..."):
-            # average spatial dimension of images (only not nan values)
-            signatures = images.nanmean((2, 3)).numpy()
-            targets = targets.numpy()
-            [X.append(sig) for sig in signatures]
-            [y.append(tar) for tar in targets]
-        return X, y
-
-    def _init_scorer(self):
-        if self.data.X_valid is None:
-            scoring_metric = make_scorer_ftn(self.scoring_metric, init=False)
-            self.scorer = partial(
-                objective_cv,
-                X_data=self.data.X_train,
-                y_data=self.data.y_train,
-                validator=self.validator,
-                scoring_metric=scoring_metric,
-            )
-        else:
-            scoring_metric_ftn = make_scorer_ftn(self.scoring_metric, init=True)
-            self.scorer = partial(
-                objective_split,
-                X_train=self.data.X_train,
-                y_train=self.data.y_train,
-                X_valid=self.data.X_valid,
-                y_valid=self.data.y_valid,
-                scoring_metric_ftn=scoring_metric_ftn,
-            )
 
     def perform_search(self):
         self._init_scorer()
@@ -179,6 +136,27 @@ class OptimizerClassification(BaseOptimizer):
         results = tuner.fit()
         best_results = results.get_best_result(metric=self.scoring_metric, mode=self.scoring_mode)
         return results, best_results
+
+    def _init_scorer(self):
+        if self.data.X_valid is None:
+            scoring_metric = make_scorer_ftn(self.scoring_metric, init=False)
+            self.scorer = partial(
+                objective_cv,
+                X_data=self.data.X_train,
+                y_data=self.data.y_train,
+                validator=self.validator,
+                scoring_metric=scoring_metric,
+            )
+        else:
+            scoring_metric_ftn = make_scorer_ftn(self.scoring_metric, init=True)
+            self.scorer = partial(
+                objective_split,
+                X_train=self.data.X_train,
+                y_train=self.data.y_train,
+                X_valid=self.data.X_valid,
+                y_valid=self.data.y_valid,
+                scoring_metric_ftn=scoring_metric_ftn,
+            )
 
     def _trainable(self, config):
         score = self._objective(config)

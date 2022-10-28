@@ -4,8 +4,9 @@ import numpy as np
 import torch
 from numpy import inf
 from torchvision.utils import make_grid
-from utils.tensor_board_writer import TensorboardWriter
-from utils.utils import MetricTracker, inf_loop
+from utils.utils import inf_loop
+
+from .helpers import MetricTracker, TensorboardWriter
 
 
 class BaseTrainer:
