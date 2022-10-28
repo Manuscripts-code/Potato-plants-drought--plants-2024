@@ -9,7 +9,8 @@ from ray.air import session
 from ray.air.config import RunConfig, ScalingConfig
 from ray.tune.schedulers import AsyncHyperBandScheduler, HyperBandScheduler
 from ray.tune.search.hyperopt import HyperOptSearch
-from utils.utils import write_txt, write_pickle
+from sklearn.base import clone
+from utils.utils import write_pickle, write_txt
 
 from .helpers import convert_images_to_1d
 from .scorer import make_scorer_ftn, objective_cv, objective_split
@@ -48,6 +49,7 @@ class BaseOptimizer:
             X_data += self.data.X_valid
             y_data += self.data.y_valid
 
+        self.model = clone(self.model)
         self.model.set_params(**best_config)
         self.model.fit(X_data, y_data)
 
@@ -139,6 +141,7 @@ class OptimizerClassification(BaseOptimizer):
 
     def _init_scorer(self):
         if self.data.X_valid is None:
+            self.logger.info("No validation data provided. Using train data for cross-validation.")
             scoring_metric = make_scorer_ftn(self.scoring_metric, init=False)
             self.scorer = partial(
                 objective_cv,
@@ -148,6 +151,7 @@ class OptimizerClassification(BaseOptimizer):
                 scoring_metric=scoring_metric,
             )
         else:
+            self.logger.info("Using validation data for scoring.")
             scoring_metric_ftn = make_scorer_ftn(self.scoring_metric, init=True)
             self.scorer = partial(
                 objective_split,
@@ -163,5 +167,6 @@ class OptimizerClassification(BaseOptimizer):
         session.report({self.scoring_metric: score, "_metric": score})
 
     def _objective(self, config):
+        self.model = clone(self.model)
         self.model.set_params(**config)
         return self.scorer(self.model)
