@@ -4,6 +4,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+from rich.progress import track
 from tqdm import tqdm
 
 import data_loader.data_loaders as module_data
@@ -38,7 +39,7 @@ def main(config):
     metric_fns = [getattr(module_metric, met) for met in config["metrics"]]
 
     logger.info("Loading checkpoint: {} ...".format(config.resume))
-    checkpoint = torch.load(os.path.join(config.resume, "model_best.pth"))
+    checkpoint = torch.load(config.resume / "model_best.pth")
     state_dict = checkpoint["state_dict"]
     if config["n_gpu"] > 1:
         model = torch.nn.DataParallel(model)
@@ -55,9 +56,12 @@ def main(config):
     target_list = []
     pred_list = []
     with torch.no_grad():
-        for i, (data, target) in enumerate(tqdm(data_loader)):
-            data, target = data.to(device), target.to(device)
+        for i, (data, target) in enumerate(track(data_loader, description="Loading data...")):
+            # replace nans with zeros
+            data = torch.nan_to_num(data)
+            # convert to column vector
             target = target.view(len(target), -1).float()
+            data, target = data.to(device), target.to(device)
 
             pred_class = model(data)
             loss = loss_fn(pred_class, target)
