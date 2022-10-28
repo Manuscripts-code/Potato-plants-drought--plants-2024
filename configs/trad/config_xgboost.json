@@ -1,0 +1,59 @@
+{
+    "name": "XGB",
+
+    "model": {
+        "type": "Model",
+        "args": {
+            "pipeline": ["XGB"],
+            "unions": {
+            }
+        }
+    },
+    "data_loader": {
+        "type": "HypDataLoader",
+        "args": {
+            "data_dir": "C:\\Users\\janezla\\Documents\\DATA\\ana_converted\\slikanje_2022_rad_4",
+            "dataset": "PlantsDataset",
+            "data_sampler": "RandomSampler15",
+            "grouped_labels_filepath": "grouped_labels\\groups_krka.xlsx",
+            "batch_size": 4,
+            "shuffle": true,
+            "validation_split": 0.2,
+            "num_workers": 4
+        }
+    },
+    "tuned_parameters":{
+                        "XGB__n_estimators":["RAND_INT", 5, 100],
+                        "XGB__use_label_encoder":["CHOICE", false],
+                        "XGB__max_depth":["RAND_INT", 3, 9],
+                        "XGB__learning_rate":["LOG_UNIFORM", 0.000001, 0.3],
+                        "XGB__verbosity":["CHOICE", 0],
+                        "XGB__booster":["CHOICE", "gbtree"],
+                        "XGB__gamma":["LOG_UNIFORM", 0.1, 1],
+                        "XGB__min_child_weight":["LOG_UNIFORM", 0.1, 100],
+                        "XGB__subsample":["LOG_UNIFORM", 0.4, 1],
+                        "XGB__colsample_bytree":["LOG_UNIFORM", 0.3, 1],
+                        "XGB__colsample_bylevel":["LOG_UNIFORM", 0.3, 1],
+                        "XGB__reg_alpha": ["LOG_UNIFORM", 0.0001, 100],
+                        "XGB__reg_lambda":["LOG_UNIFORM", 0.0001, 100],
+                        "XGB__random_state":["CHOICE", 27],
+                        "XGB__lambda": ["LOG_UNIFORM", 0.01, 100],
+                        "XGB__silient":["CHOICE", false]
+                    },
+    "optimizer": "OptimizerClassification",
+    "validation": {
+        "type": "RepeatedStratifiedKFold",
+        "args": {
+            "n_splits": 5,
+            "n_repeats": 3,
+            "random_state": 1
+        }
+    },
+
+    "num_samples": 500,
+    "scoring_metric": "accuracy",
+    "scoring_mode": "max",
+    "debug": false,
+    "save_dir": "saved/"
+}
+
