@@ -1,10 +1,16 @@
 import random
+from typing import Protocol
 
 import numpy as np
 import torch
 
 
-class AddGaussianNoise:
+class Transform(Protocol):
+    def __call__(self, images: np.ndarray) -> np.ndarray:
+        ...
+
+
+class AddGaussianNoise(Transform):
     def __init__(self, mean=0.0, std=0.0):
         self.std = std
         self.mean = mean
@@ -17,12 +23,10 @@ class AddGaussianNoise:
         return image.astype(dtype="float32")
 
     def __repr__(self):
-        return self.__class__.__name__ + "(mean={0}, std={1})".format(
-            self.mean, self.std
-        )
+        return self.__class__.__name__ + "(mean={0}, std={1})".format(self.mean, self.std)
 
 
-class RandomCrop:
+class RandomCrop(Transform):
     """Crop randomly the image in a sample.
 
     Args:
@@ -49,7 +53,7 @@ class RandomCrop:
         return image
 
 
-class RandomMirror:
+class RandomMirror(Transform):
     def __call__(self, image):
         # vertical = 0; horizontal = 1, no flip = None
         axis = random.choices([0, 1, (0, 1), None])[0]
@@ -58,7 +62,7 @@ class RandomMirror:
         return image.astype(dtype="float32")
 
 
-class AreaNormalization:
+class AreaNormalization(Transform):
     def __call__(self, image):
         image = self._image_normalization(image, self._signal_normalize)
         return image.astype(dtype="float32")
@@ -75,7 +79,6 @@ class AreaNormalization:
         return signal / area
 
 
-class NoTransformation:
+class NoTransformation(Transform):
     def __call__(self, image):
         return image
-
