@@ -24,9 +24,10 @@ def main(config):
         config["data_loader"]["args"]["dataset"],
         config["data_loader"]["args"]["data_sampler"],
         config["data_loader"]["args"]["grouped_labels_filepath"],
+        train_test_split_size=config["data_loader"]["args"]["train_test_split_size"],
+        train_valid_split_size=0.0,
         batch_size=1,
         shuffle=False,
-        validation_split=0.0,
         training=False,
         num_workers=2,
     )

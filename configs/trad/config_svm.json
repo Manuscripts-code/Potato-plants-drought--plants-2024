@@ -12,18 +12,19 @@
     "data_loader": {
         "type": "HypDataLoader",
         "args": {
-            "data_dir": "C:\\Users\\janezla\\Documents\\DATA\\ana_converted\\slikanje_2022_rad_4_reduced",
+            "data_dir": "C:\\Users\\janezla\\Documents\\DATA\\ana_converted\\slikanje_2022_rad_4",
             "dataset": "PlantsDataset",
-            "data_sampler": "RandomSampler15",
+            "data_sampler": "GroupSampler",
             "grouped_labels_filepath": "grouped_labels\\groups_krka.xlsx",
             "batch_size": 4,
             "shuffle": true,
-            "validation_split": 0.2,
+            "train_test_split_size": 0.25,
+            "train_valid_split_size": 0.2,
             "num_workers": 4
         }
     },
     "tuned_parameters":{
-                        "SVC__kernel": ["CHOICE", "rbf", "sigmoid"],
+                        "SVC__kernel": ["CHOICE", "rbf"],
                         "SVC__gamma": ["LOG_UNIFORM", 1e-7, 1],
                         "SVC__C": ["LOG_UNIFORM", 1, 10000]
                     },

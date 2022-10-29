@@ -27,7 +27,7 @@ class PlantsDataset(Dataset):
 
         images, labels, classes = self._read_data(data_dir, grouped_labels_filepath)
         # get data based on whether it is training or testing run
-        self.images, self.classes = data_sampler.sample(images, labels, classes)
+        self.images, self.classes = data_sampler(images, labels, classes)
 
     def _init_transform(self):
         transform_train = transforms.Compose(
@@ -66,12 +66,13 @@ class PlantsDataset(Dataset):
 
             image_group = groups[groups.labels == image_label].groups_encoded.iloc[0]
 
-            # convert image to array 
+            # convert image to array
             image_arr = image.to_numpy()
-            # TODO: cap between 0 and 1
             # remove noisy channels
             image_arr = np.delete(image_arr, NOISY_BANDS, axis=2)
-            # normalize by area under the signal
+            # clip between 0 and 1
+            image_arr = image_arr.clip(0, 1)
+            # transform by transformations defined during loading
             image_arr = self.transform_during_loading(image_arr)
 
             images.append(image_arr)

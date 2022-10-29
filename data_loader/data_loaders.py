@@ -13,11 +13,11 @@ class BaseDataLoader(DataLoader):
         dataset,
         batch_size,
         shuffle,
-        validation_split,
+        train_valid_split_size,
         num_workers,
         collate_fn=default_collate,
     ):
-        self.validation_split = validation_split
+        self.validation_split = train_valid_split_size
         self.shuffle = shuffle
 
         self.batch_idx = 0
@@ -80,16 +80,17 @@ class HypDataLoader(BaseDataLoader):
         grouped_labels_filepath,
         batch_size,
         shuffle=True,
-        validation_split=0.0,
+        train_test_split_size=0.0,
+        train_valid_split_size=0.0,
         num_workers=1,
         training=True,
     ):
-        # init smapler from data_samplers.py
-        data_sampler = getattr(module_samplers, data_sampler)(training=training)
-        # init dataset which loads images by given sampler
+        # init sampler from data_samplers.py
+        data_sampler = getattr(module_samplers, data_sampler)(
+            training=training, train_test_split_size=train_test_split_size
+        )
+        # init dataset which loads images by given sampler from datasets.py
         self.dataset = getattr(module_datasets, dataset)(
             data_dir, data_sampler, grouped_labels_filepath, training
         )
-        super().__init__(
-            self.dataset, batch_size, shuffle, validation_split, num_workers
-        )
+        super().__init__(self.dataset, batch_size, shuffle, train_valid_split_size, num_workers)
