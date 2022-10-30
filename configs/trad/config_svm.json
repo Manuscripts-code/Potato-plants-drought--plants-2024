@@ -14,11 +14,11 @@
         "args": {
             "data_dir": "C:\\Users\\janezla\\Documents\\DATA\\ana_converted\\slikanje_2022_rad_4",
             "dataset": "PlantsDataset",
-            "data_sampler": "GroupSampler",
+            "data_sampler": "ManualGroupSamplerKrka",
             "grouped_labels_filepath": "grouped_labels\\groups_krka.xlsx",
             "batch_size": 4,
             "shuffle": true,
-            "train_test_split_size": 0.25,
+            "train_test_split_size": 0.2,
             "train_valid_split_size": 0.2,
             "num_workers": 4
         }

@@ -47,7 +47,7 @@ class ConvNet(BaseModel):
             nn.Conv2d(in_channels, out_channels, 3, padding=1),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(),
-            nn.Dropout(0.1),
+            # nn.Dropout(0.1),
             nn.MaxPool2d(2, 2),
         )
         return conv_block
@@ -59,7 +59,7 @@ class ConvNet(BaseModel):
             activation = nn.Sigmoid()
         fc_block = nn.Sequential(
             nn.Linear(in_channels, out_channels),
-            nn.Dropout(0.1),
+            # nn.Dropout(0.1),
             activation,
         )
         return fc_block

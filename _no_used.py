@@ -23,35 +23,46 @@ import torch.nn.functional as F
 class ConvNet(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = self._conv_block(373, 128)
-        self.conv2 = self._conv_block(128, 64)
-        self.conv3 = self._conv_block(64, 32)
-        self.conv4 = self._conv_block(32, 16)
-        self.conv5 = self._conv_block(16, 8)
+        self.conv1 = self._conv_block(373, 256)
+        self.conv2 = self._conv_block(256, 128)
+        self.conv3 = self._conv_block(128, 64)
+        self.conv4 = self._conv_block(64, 32)
+        # self.conv5 = self._conv_block(32, 16)
 
-        self.fc = nn.Sequential(
-            nn.Flatten(1),
-            nn.LazyLinear(1),
-            nn.Sigmoid(),
-        )
+        self.flatten = nn.Flatten(1)
+
+        # self.fc1 = self._fc_block(128, 32, activation="relu")
+        self.fc1 = self._fc_block(128, 1, activation="sigmoid")
 
     def _conv_block(self, in_channels, out_channels):
         conv_block = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, 3, padding=1),
+            nn.Conv2d(in_channels, out_channels, 3),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(),
-            nn.Dropout(0.2),
             nn.MaxPool2d(2, 2),
         )
         return conv_block
+
+    def _fc_block(self, in_channels, out_channels, activation="relu"):
+        if activation == "relu":
+            activation = nn.ReLU()
+        elif activation == "sigmoid":
+            activation = nn.Sigmoid()
+        fc_block = nn.Sequential(
+            nn.Linear(in_channels, out_channels),
+            activation,
+        )
+        return fc_block
 
     def forward(self, x):
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
         x = self.conv4(x)
-        x = self.conv5(x)
-        x = self.fc(x)
+        # x = self.conv5(x)
+        x = self.flatten(x)
+        x = self.fc1(x)
+        # x = self.fc2(x)
         return x
 
     def __str__(self):
@@ -63,16 +74,16 @@ class ConvNet(nn.Module):
         return super().__str__() + "\nTrainable parameters: {}".format(params)
 
 
-# network = ConvNet()
-# x = torch.rand(32, 373, 32, 32)
+network = ConvNet()
+x = torch.rand(32, 373, 64, 64)
 # x = network.conv1(x)
 # x = network.conv2(x)
 # x = network.conv3(x)
 # x = network.conv4(x)
-# x = network.conv5(x)
-# # x = network.fc(x)
-# print(x.shape)
-# # print(network)
+x = network.forward(x)
+# x = network.fc(x)
+print(x.shape)
+# print(network)
 
 
 # class AreaNormalization:
@@ -127,51 +138,46 @@ class ConvNet(nn.Module):
 # print(x.shape)
 
 
+# def perform_search(self):
+#     algo = HyperOptSearch()
+#     scheduler = HyperBandScheduler()
+#     tune_config = tune.TuneConfig(
+#             # metric=self.scoring,
+#             # mode=self.mode,
+#             # search_alg=algo,
+#             # scheduler=scheduler,
+#             num_samples=self.num_samples,
+#             # max_concurrent_trials=10,
+#             # resources_per_trial={"cpu": 1, "gpu": 0.1},
+#         )
+#     run_config = RunConfig(
+#             name="Potato_drought",
+#         )
+#     tuner = tune.Tuner(
+#         trainable=self.trainable,
+#         param_space=self.tuned_params,
+#         tune_config=tune_config,
+#         # run_config=run_config,
+#     )
+#     results = tuner.fit()
 
+#     self.best_config = results.get_best_result(metric="score", mode="max").config
+#     return results
 
+# def trainable(self, config):
+#     score = self.objective(config)
+#     session.report({"score": score})
 
-
-
-    # def perform_search(self):
-    #     algo = HyperOptSearch()
-    #     scheduler = HyperBandScheduler()
-    #     tune_config = tune.TuneConfig(
-    #             # metric=self.scoring,
-    #             # mode=self.mode,
-    #             # search_alg=algo,
-    #             # scheduler=scheduler,
-    #             num_samples=self.num_samples,
-    #             # max_concurrent_trials=10,
-    #             # resources_per_trial={"cpu": 1, "gpu": 0.1},
-    #         )
-    #     run_config = RunConfig(
-    #             name="Potato_drought",
-    #         )
-    #     tuner = tune.Tuner(
-    #         trainable=self.trainable,
-    #         param_space=self.tuned_params,
-    #         tune_config=tune_config,
-    #         # run_config=run_config,
-    #     )
-    #     results = tuner.fit()
-
-    #     self.best_config = results.get_best_result(metric="score", mode="max").config
-    #     return results
-
-    # def trainable(self, config):
-    #     score = self.objective(config)
-    #     session.report({"score": score})
-
-    # def objective(self, config):
-    #     self.model.set_params(**config)
-    #     score = cross_val_score(
-    #         self.model,
-    #         self.data.X_train,
-    #         self.data.y_train,
-    #         cv=self.validator,
-    #         error_score=0,
-    #         n_jobs=1,
-    #         pre_dispatch=1,
-    #         scoring=self.scoring,
-    #     )
-    #     return score.mean()
+# def objective(self, config):
+#     self.model.set_params(**config)
+#     score = cross_val_score(
+#         self.model,
+#         self.data.X_train,
+#         self.data.y_train,
+#         cv=self.validator,
+#         error_score=0,
+#         n_jobs=1,
+#         pre_dispatch=1,
+#         scoring=self.scoring,
+#     )
+#     return score.mean()
