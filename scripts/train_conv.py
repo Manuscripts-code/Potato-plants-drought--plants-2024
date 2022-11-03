@@ -20,7 +20,7 @@ torch.backends.cudnn.benchmark = False
 np.random.seed(SEED)
 
 
-def main(config):
+def train_conv(config):
     logger = config.get_logger("train")
 
     # setup data_loader instances
@@ -48,8 +48,11 @@ def main(config):
     # log general info
     logger.info(model)
     logger.info(f"Device: {device}")
-    logger.info(f"Total images for training: {len(data_loader.dataset)}"
-                f" (train: {len(data_loader.sampler)}, valid: {len(data_loader.valid_sampler)})")
+    logger.info(
+        f"Total images for training: {len(data_loader.dataset)}"
+        f" (train: {len(data_loader.sampler)}, "
+        f"valid: {len(data_loader.valid_sampler) if data_loader.valid_sampler else 0})"
+    )
 
     # initialize trainer and train
     trainer = Trainer(
@@ -98,4 +101,4 @@ if __name__ == "__main__":
         CustomArgs(["--bs", "--batch_size"], type=int, target="data_loader;args;batch_size"),
     ]
     config = ParseConfig.from_args(args, options)
-    main(config)
+    train_conv(config)

@@ -4,6 +4,7 @@ import numpy as np
 import torch
 from numpy import inf
 from torchvision.utils import make_grid
+
 from utils.utils import inf_loop
 
 from .helpers import MetricTracker, TensorboardWriter
@@ -81,9 +82,9 @@ class BaseTrainer:
             if self.mnt_mode != "off":
                 try:
                     # check whether model performance improved or not, according to specified metric(mnt_metric)
-                    improved = (
-                        self.mnt_mode == "min" and log[self.mnt_metric] <= self.mnt_best
-                    ) or (self.mnt_mode == "max" and log[self.mnt_metric] >= self.mnt_best)
+                    improved = (self.mnt_mode == "min" and log[self.mnt_metric] <= self.mnt_best) or (
+                        self.mnt_mode == "max" and log[self.mnt_metric] >= self.mnt_best
+                    )
                 except KeyError:
                     self.logger.warning(
                         "Warning: Metric '{}' is not found. "
@@ -140,7 +141,7 @@ class BaseTrainer:
 
         :param resume_path: Checkpoint path to be resumed
         """
-        resume_path = str(resume_path)
+        resume_path = str(resume_path / "model_best.pth")
         self.logger.info("Loading checkpoint: {} ...".format(resume_path))
         checkpoint = torch.load(resume_path)
         self.start_epoch = checkpoint["epoch"] + 1
@@ -163,9 +164,7 @@ class BaseTrainer:
         else:
             self.optimizer.load_state_dict(checkpoint["optimizer"])
 
-        self.logger.info(
-            "Checkpoint loaded. Resume training from epoch {}".format(self.start_epoch)
-        )
+        self.logger.info("Checkpoint loaded. Resume training from epoch {}".format(self.start_epoch))
 
 
 class Trainer(BaseTrainer):
@@ -208,6 +207,10 @@ class Trainer(BaseTrainer):
         self.valid_metrics = MetricTracker(
             "loss", *[m.__name__ for m in self.metric_ftns], writer=self.writer
         )
+
+        # change validation monitoring metric to train metric
+        if not self.do_validation and "val_" in self.mnt_metric:
+            self.mnt_metric = self.mnt_metric.replace("val_", "")
 
     def _train_epoch(self, epoch):
         """

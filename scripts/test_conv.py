@@ -15,7 +15,7 @@ import models_conv.model as module_arch
 from utils.parse_config import ParseConfig
 
 
-def main(config):
+def test_conv(config):
     logger = config.get_logger("test")
 
     # setup data_loader instances
@@ -115,4 +115,4 @@ if __name__ == "__main__":
     )
 
     config = ParseConfig.from_args(args)
-    main(config)
+    test_conv(config)

@@ -12,7 +12,7 @@ from utils.parse_config import ParseConfig
 from utils.utils import read_json
 
 
-def main(config):
+def train_trad(config):
     ray.init()
     logger = config.get_logger("train")
 
@@ -29,8 +29,11 @@ def main(config):
 
     # log general info
     logger.info(model)
-    logger.info(f"Total images for training: {len(data_loader.dataset)}"
-                f" (train: {len(data_loader.sampler)}, valid: {len(data_loader.valid_sampler)})")
+    logger.info(
+        f"Total images for training: {len(data_loader.dataset)}"
+        f" (train: {len(data_loader.sampler)}, "
+        f"valid: {len(data_loader.valid_sampler) if data_loader.valid_sampler else 0})"
+    )
 
     # init optimizer, load data and do the optimization
     optimizer = Optimizer(
@@ -76,4 +79,4 @@ if __name__ == "__main__":
         CustomArgs(["--bs", "--batch_size"], type=int, target="data_loader;args;batch_size"),
     ]
     config = ParseConfig.from_args(args, options)
-    main(config)
+    train_trad(config)

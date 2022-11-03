@@ -10,7 +10,7 @@ from .logger import get_logging, setup_logging
 
 
 class ParseConfig:
-    def __init__(self, config, resume=None, modification=None, run_id=None):
+    def __init__(self, config, resume=None, mode=None, modification=None, run_id=None):
         """
         class to parse configuration json file. Handles hyperparameters for training, initializations of modules, checkpoint saving
         and logging module.
@@ -22,6 +22,7 @@ class ParseConfig:
         # load config file and apply modification
         self._config = _update_config(config, modification)
         self.resume = resume
+        self.mode = mode
 
         # set save_dir where trained model and log will be saved.
         save_dir = Path(self.config["save_dir"])
@@ -53,6 +54,12 @@ class ParseConfig:
 
         if args.device is not None:
             os.environ["CUDA_VISIBLE_DEVICES"] = args.device
+
+        if args.mode is not None:
+            mode = args.mode
+        else:
+            raise Exception("mode is not specified. Add '-m train', for example.")
+           
         if args.resume is not None:
             resume = Path(args.resume)
             cfg_fname = resume / "config.json"
@@ -71,7 +78,7 @@ class ParseConfig:
 
         # parse custom cli options into dictionary
         modification = {opt.target: getattr(args, _get_opt_name(opt.flags)) for opt in options}
-        return cls(config, resume, modification)
+        return cls(config, resume, mode, modification)
 
     def init_obj(self, name, module, *args, **kwargs):
         """

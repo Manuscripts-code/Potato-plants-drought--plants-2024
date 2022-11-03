@@ -14,7 +14,7 @@ from utils.parse_config import ParseConfig
 from utils.utils import read_pickle
 
 
-def main(config):
+def test_trad(config):
     logger = config.get_logger("test")
 
     # setup data_loader instances
@@ -69,4 +69,4 @@ if __name__ == "__main__":
     )
 
     config = ParseConfig.from_args(args)
-    main(config)
+    test_trad(config)
