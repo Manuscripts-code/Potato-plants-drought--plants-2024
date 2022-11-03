@@ -1,3 +1,4 @@
+import random
 from typing import Protocol
 
 import numpy as np
@@ -48,6 +49,7 @@ class StratifySampler(Sampler):
     def __call__(self, images, labels, classes):
         idx_full = np.arange(len(images))
 
+        # note: train_test_split returns list containing train-test split of inputs.
         train_index, test_index = train_test_split(
             idx_full,
             test_size=self.train_test_split_size,
@@ -71,12 +73,10 @@ class GroupSampler(Sampler):
 
     def __call__(self, images, labels, classes):
         idx_full = np.arange(len(images))
-        np.random.seed(0)
-        np.random.shuffle(idx_full)
 
+        # note: GroupShuffleSplit generate indices to split data into training and test set.
         splitter = GroupShuffleSplit(test_size=self.train_test_split_size, n_splits=2, random_state=0)
         split = splitter.split(idx_full, groups=labels)
-        # TODO: check if correct!
         train_index, test_index = next(split)
 
         if self.training:
@@ -96,21 +96,21 @@ class ManualGroupSamplerKrka(Sampler):
         labels_unique = np.unique(labels)
 
         # generate list by labels of treatment
-        K_list = [label for label in labels_unique if label.split("-")[1] == "K"]
-        S_list = [label for label in labels_unique if label.split("-")[1] == "S"]
+        K_list_unique = [label for label in labels_unique if label.split("-")[1] == "K"]
+        S_list_unique = [label for label in labels_unique if label.split("-")[1] == "S"]
 
-        # remove because it has small number of samples
-        K_list.remove("KK-K-09")
+        # remove because it has small number of samples, and to have same K and S
+        K_list_unique.remove("KK-K-09")
 
-        # indices where labels correspond to each treatment
-        labels_K_indices = np.array([idx for idx, label in enumerate(labels) if label in K_list])
-        labels_S_indices = np.array([idx for idx, label in enumerate(labels) if label in S_list])
+        # indices where labels correspond to each K or S treatment
+        labels_K_indices = np.array([idx for idx, label in enumerate(labels) if label in K_list_unique])
+        labels_S_indices = np.array([idx for idx, label in enumerate(labels) if label in S_list_unique])
 
         # get labels for each treatment
         labels_K = labels[labels_K_indices]
         labels_S = labels[labels_S_indices]
 
-        # split treatment separately
+        # split treatments separately
         splitter = GroupShuffleSplit(test_size=self.train_test_split_size, n_splits=2, random_state=0)
         # K
         split = splitter.split(labels_K_indices, groups=labels_K)
@@ -125,9 +125,30 @@ class ManualGroupSamplerKrka(Sampler):
         train_index = np.concatenate((train_idx_K, train_idx_S))
         test_index = np.concatenate((test_idx_K, test_idx_S))
 
+        # stratify by classes train and test indices
+        train_index = self.stratify_classes(classes, train_index)
+        test_index = self.stratify_classes(classes, test_index)
+
         if self.training:
             images, classes = images[train_index], classes[train_index]
         else:
             images, classes = images[test_index], classes[test_index]
         images, classes = shuffle(images, classes, random_state=0)
         return images, classes
+
+    @staticmethod
+    def stratify_classes(classes, set_indices):
+        random.seed(0)
+        # calculate number of samples per each classes
+        samples_per_class = np.bincount(classes[set_indices])
+        # min samples
+        samples_min = samples_per_class.min()
+
+        class_indices = []
+        for cls_ in np.unique(classes):
+            indices = np.where(classes[set_indices] == cls_)[0]
+            # under-sample without replacement
+            indices = random.sample(indices.tolist(), samples_min)
+            class_indices.append(indices)
+        return np.sort(set_indices[np.concatenate(class_indices)])
+
