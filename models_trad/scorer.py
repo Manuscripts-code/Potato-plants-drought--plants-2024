@@ -4,6 +4,7 @@ from sklearn.model_selection import cross_val_score
 AVAILABLE_SCORING_METRICS = {
     "accuracy": "accuracy_score",
     "balanced_accuracy": "balanced_accuracy_score",
+    "f1": "f1_score",
 }
 
 
