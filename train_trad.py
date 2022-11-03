@@ -22,12 +22,17 @@ def main(config):
 
     # initialize model and print to console
     model = config.init_obj("model", models_).create()
-    logger.info(model)
 
     # init validator and optimizer
     validator = config.init_obj("validation", model_selection_)
     Optimizer = config.import_module("optimizer", optimizers_)
 
+    # log general info
+    logger.info(model)
+    logger.info(f"Total images for training: {len(data_loader.dataset)}"
+                f" (train: {len(data_loader.sampler)}, valid: {len(data_loader.valid_sampler)})")
+
+    # init optimizer, load data and do the optimization
     optimizer = Optimizer(
         model=model,
         data_loader=data_loader,

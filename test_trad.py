@@ -35,7 +35,10 @@ def main(config):
 
     logger.info("Loading checkpoint: {} ...".format(config.resume))
     model = read_pickle(config.resume / "model.pkl")
+
+    # log general info
     logger.info(model)
+    logger.info(f"Total images for testing: {len(data_loader.dataset)}")
 
     y_pred = model.predict(X_test)
     logger.info(f"Classification report on test data:\n{classification_report(y_test, y_pred)}")

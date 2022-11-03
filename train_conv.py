@@ -29,7 +29,6 @@ def main(config):
 
     # build model architecture, then print to console
     model = config.init_obj("arch", module_arch)
-    logger.info(model)
 
     # prepare for (multi-device) GPU training
     device, device_ids = prepare_device(config["n_gpu"])
@@ -46,6 +45,13 @@ def main(config):
     optimizer = config.init_obj("optimizer", torch.optim, trainable_params)
     lr_scheduler = config.init_obj("lr_scheduler", torch.optim.lr_scheduler, optimizer)
 
+    # log general info
+    logger.info(model)
+    logger.info(f"Device: {device}")
+    logger.info(f"Total images for training: {len(data_loader.dataset)}"
+                f" (train: {len(data_loader.sampler)}, valid: {len(data_loader.valid_sampler)})")
+
+    # initialize trainer and train
     trainer = Trainer(
         model,
         criterion,

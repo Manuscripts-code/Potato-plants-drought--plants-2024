@@ -34,7 +34,6 @@ def main(config):
 
     # build model architecture
     model = config.init_obj("arch", module_arch)
-    logger.info(model)
 
     # get function handles of loss and metrics
     loss_fn = getattr(module_loss, config["loss"])
@@ -51,6 +50,11 @@ def main(config):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
     model.eval()
+
+    # log general info
+    logger.info(model)
+    logger.info(f"Device: {device}")
+    logger.info(f"Total images for testing: {len(data_loader.dataset)}")
 
     total_loss = 0.0
     total_metrics = torch.zeros(len(metric_fns)).to(device)
