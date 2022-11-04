@@ -10,7 +10,8 @@ from ray.air.config import RunConfig, ScalingConfig
 from ray.tune.schedulers import AsyncHyperBandScheduler, HyperBandScheduler
 from ray.tune.search.hyperopt import HyperOptSearch
 from sklearn.base import clone
-from utils.utils import write_pickle, write_txt
+
+from utils.utils import write_json, write_pickle, write_txt
 
 from .helpers import convert_images_to_1d
 from .scorer import make_scorer_ftn, objective_cv, objective_split
@@ -56,10 +57,15 @@ class BaseOptimizer:
     def _save_model(self):
         write_pickle(self.model, self.save_dir / "model.pkl")
 
-    def _save_report(self, report, name_txt):
-        report = str(report)
-        save_path = os.path.join(self.save_dir, name_txt)
-        write_txt(report, save_path)
+    def _save_report(self, report, fname, format="txt"):
+        save_path = os.path.join(self.save_dir, fname)
+        if format == "txt":
+            report = str(report)
+            write_txt(report, save_path)
+        elif format == "json":
+            write_json(report, save_path)
+        else:
+            raise ValueError(f"Unknown format: {format}")
 
     def _create_train_report(self, results, best_results):
         best_config = best_results.config
@@ -69,10 +75,10 @@ class BaseOptimizer:
 
         self.logger.info(f"Best hyperparameters found were: {best_config}")
         self.logger.info(f"Best {self.scoring_metric}: {best_metric}\n")
-        self._save_report(best_config, "best_config_train.txt")
-        self._save_report(best_metric, "best_metric_train.txt")
-        self._save_report(best_all_params, "best_all_params_train.txt")
-        self._save_report(all_df, "all_df_train.txt")
+        self._save_report(best_config, "best_config_train.json", format="json")
+        self._save_report(best_all_params, "best_all_params_train.json", format="json")
+        self._save_report(best_metric, "best_metric_train.txt", format="txt")
+        self._save_report(all_df, "all_df_train.txt", format="txt")
 
     @staticmethod
     def _modify_params(config):
