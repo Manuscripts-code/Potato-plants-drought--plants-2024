@@ -1,10 +1,6 @@
-from abc import abstractmethod
-
 from sklearn.pipeline import FeatureUnion, Pipeline
-from sklearn.svm import SVC
-from xgboost import XGBClassifier
 
-METHODS = {"SVC": SVC, "XGB": XGBClassifier}
+from .methods import METHODS
 
 
 class Model:
