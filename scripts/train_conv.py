@@ -1,6 +1,7 @@
 import argparse
 import collections
 
+import mlflow
 import numpy as np
 import torch
 
@@ -67,7 +68,10 @@ def train_conv(config):
         lr_scheduler=lr_scheduler,
     )
 
-    trainer.train()
+    # setup mlflow experiment name
+    mlflow.set_experiment(experiment_name=config.exper_name)
+    with mlflow.start_run(run_name=config.run_id):
+        trainer.train()
 
 
 if __name__ == "__main__":

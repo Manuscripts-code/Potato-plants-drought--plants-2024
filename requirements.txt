@@ -13,3 +13,4 @@ tensorboardX==2.5.1
 torch==1.13.0
 torchvision==0.14.0 
 torchaudio==0.13.0
+mlflow==1.30.0

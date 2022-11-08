@@ -42,6 +42,5 @@
     "num_samples": 200,
     "scoring_metric": "f1",
     "scoring_mode": "max",
-    "debug": false,
-    "save_dir": "saved/"
+    "debug": false
 }

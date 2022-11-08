@@ -130,6 +130,7 @@ dmypy.json
 
 # saved logs and models
 saved
+experiments
 
 # vscode
 .vscode

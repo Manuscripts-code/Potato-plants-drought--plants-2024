@@ -4,6 +4,7 @@ import numpy as np
 import torch
 from numpy import inf
 from torchvision.utils import make_grid
+import mlflow
 
 from utils.utils import inf_loop
 
@@ -72,6 +73,9 @@ class BaseTrainer:
             # save logged informations into log dict
             log = {"epoch": epoch}
             log.update(result)
+
+            # log metrics with mlflow
+            mlflow.log_metrics(result, step=log["epoch"])
 
             # print logged informations to the screen
             for key, value in log.items():

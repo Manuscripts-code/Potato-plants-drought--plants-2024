@@ -4,9 +4,12 @@ from functools import partial, reduce
 from operator import getitem
 from pathlib import Path
 
-from utils.utils import read_json, write_json
+import mlflow
+
+from configs import configs
 
 from .logger import get_logging, setup_logging
+from .utils import read_json, write_json
 
 
 class ParseConfig:
@@ -25,12 +28,14 @@ class ParseConfig:
         self.mode = mode
 
         # set save_dir where trained model and log will be saved.
-        save_dir = Path(self.config["save_dir"])
+        save_dir = configs.SAVE_DIR
 
         exper_name = self.config["name"]
         if run_id is None:  # use timestamp as default run-id
-            run_id = datetime.now().strftime(r"%m%d_%H%M%S")
+            run_id = datetime.now().strftime(r"%m-%d_%H-%M-%S")
         self._save_dir = save_dir / exper_name / run_id
+        self.run_id = run_id
+        self.exper_name = exper_name
 
         # make directory for saving checkpoints and log.
         exist_ok = run_id == ""
@@ -41,6 +46,7 @@ class ParseConfig:
 
         # configure logging module
         setup_logging(self.save_dir)
+
 
     @classmethod
     def from_args(cls, args, options=""):
@@ -59,14 +65,12 @@ class ParseConfig:
             mode = args.mode
         else:
             raise Exception("mode is not specified. Add '-m train', for example.")
-           
+
         if args.resume is not None:
             resume = Path(args.resume)
             cfg_fname = resume / "config.json"
         else:
-            msg_no_cfg = (
-                "Configuration file need to be specified. Add '-c config.json', for example."
-            )
+            msg_no_cfg = "Configuration file need to be specified. Add '-c config.json', for example."
             assert args.config is not None, msg_no_cfg
             resume = None
             cfg_fname = Path(args.config)

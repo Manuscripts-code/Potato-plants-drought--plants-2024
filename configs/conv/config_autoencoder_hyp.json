@@ -45,6 +45,5 @@
         "monitor": "min val_loss",
         "early_stop": 30,
         "tensorboard": true
-    },
-    "save_dir": "saved/"
+    }
 }
