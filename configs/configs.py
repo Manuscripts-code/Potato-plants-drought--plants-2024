@@ -8,4 +8,5 @@ SAVE_DIR = Path(BASE_DIR, "saved")
 MODEL_REGISTRY.mkdir(parents=True, exist_ok=True)
 SAVE_DIR.mkdir(parents=True, exist_ok=True)
 
-mlflow.set_tracking_uri("file:///" + str(MODEL_REGISTRY.absolute()))
+TRACKING_URI = "file:///" + str(MODEL_REGISTRY.absolute())
+mlflow.set_tracking_uri(TRACKING_URI)

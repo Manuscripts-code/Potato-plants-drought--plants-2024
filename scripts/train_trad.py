@@ -2,6 +2,7 @@ import argparse
 import collections
 import glob
 
+import mlflow
 import ray
 import sklearn.model_selection as model_selection_
 
@@ -44,7 +45,10 @@ def train_trad(config):
         config=config,
     )
     optimizer.load_data()
-    optimizer.optimize()
+
+    mlflow.set_experiment(experiment_name=config.exper_name)
+    with mlflow.start_run(run_name=config.run_id):
+        optimizer.optimize()
 
 
 if __name__ == "__main__":

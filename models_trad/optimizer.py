@@ -6,11 +6,13 @@ from types import SimpleNamespace
 import numpy as np
 from ray import tune
 from ray.air import session
+from ray.air.callbacks.mlflow import MLflowLoggerCallback
 from ray.air.config import RunConfig, ScalingConfig
 from ray.tune.schedulers import AsyncHyperBandScheduler, HyperBandScheduler
 from ray.tune.search.hyperopt import HyperOptSearch
 from sklearn.base import clone
 
+from configs import configs
 from utils.utils import write_json, write_pickle, write_txt
 
 from .helpers import convert_images_to_1d
@@ -28,6 +30,7 @@ class BaseOptimizer:
         self.num_samples = config["num_samples"]
         self.name = config["name"]
         self.save_dir = config.save_dir
+        self.exper_name = config.exper_name
         self.data = None
 
     def optimize(self):
@@ -116,9 +119,7 @@ class OptimizerClassification(BaseOptimizer):
         X_train, y_train = convert_images_to_1d(self.data_loader)
         X_valid, y_valid = convert_images_to_1d(self.valid_data_loader)
         # create data structure i.e.: self.data.X_train, self.data.y_train, etc.
-        self.data = SimpleNamespace(
-            X_train=X_train, y_train=y_train, X_valid=X_valid, y_valid=y_valid
-        )
+        self.data = SimpleNamespace(X_train=X_train, y_train=y_train, X_valid=X_valid, y_valid=y_valid)
         self.data_loader = None
         self.valid_data_loader = None
 
@@ -132,9 +133,12 @@ class OptimizerClassification(BaseOptimizer):
             scheduler=scheduler,
             num_samples=self.num_samples,
         )
-        run_config = RunConfig(
-            name=self.name,
+        mlflow_callback = MLflowLoggerCallback(
+            tracking_uri=configs.TRACKING_URI,
+            experiment_name=self.exper_name,
+            save_artifact=True,
         )
+        run_config = RunConfig(name=self.name, callbacks=[mlflow_callback])
         tuner = tune.Tuner(
             trainable=self._trainable,
             param_space=self.tuned_params,

@@ -4,8 +4,6 @@ from functools import partial, reduce
 from operator import getitem
 from pathlib import Path
 
-import mlflow
-
 from configs import configs
 
 from .logger import get_logging, setup_logging
@@ -46,7 +44,6 @@ class ParseConfig:
 
         # configure logging module
         setup_logging(self.save_dir)
-
 
     @classmethod
     def from_args(cls, args, options=""):
