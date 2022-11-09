@@ -25,8 +25,8 @@ class ParseConfig:
         self.resume = resume
         self.mode = mode
 
-        # set save_dir where trained model and log will be saved.
-        save_dir = configs.SAVE_DIR
+        # set save_dir where logs will be saved.
+        save_dir = configs.LOGS_DIR
 
         exper_name = self.config["name"]
         if run_id is None:  # use timestamp as default run-id

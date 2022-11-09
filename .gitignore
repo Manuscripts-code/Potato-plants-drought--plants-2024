@@ -129,7 +129,7 @@ dmypy.json
 .pyre/
 
 # saved logs and models
-saved
+logs
 experiments
 
 # vscode

@@ -1,19 +1,27 @@
+import copy
+import json
 import os
+import tempfile
 from abc import abstractmethod
 from functools import partial
+from pathlib import Path
 from types import SimpleNamespace
 
+import joblib
+import mlflow
+import mlflow.sklearn
 import numpy as np
 from ray import tune
 from ray.air import session
 from ray.air.callbacks.mlflow import MLflowLoggerCallback
 from ray.air.config import RunConfig, ScalingConfig
-from ray.tune.schedulers import AsyncHyperBandScheduler, HyperBandScheduler
+from ray.tune.schedulers import HyperBandScheduler
 from ray.tune.search.hyperopt import HyperOptSearch
 from sklearn.base import clone
 
 from configs import configs
-from utils.utils import write_json, write_pickle, write_txt
+from utils.tools import calculate_classification_metrics
+from utils.utils import ensure_dir, write_json, write_txt
 
 from .helpers import convert_images_to_1d
 from .scorer import make_scorer_ftn, objective_cv, objective_split
@@ -21,6 +29,7 @@ from .scorer import make_scorer_ftn, objective_cv, objective_split
 
 class BaseOptimizer:
     def __init__(self, model, config):
+        self.config = copy.deepcopy(config.config)
         self.logger = config.get_logger("trainer", verbosity=2)
         self.model = model
         self.scoring_metric = config["scoring_metric"]
@@ -43,45 +52,25 @@ class BaseOptimizer:
 
     def _debug_false(self):
         results, best_results = self.perform_search()
-        self._create_train_report(results, best_results)
-        self._refit_model(best_results.config)
-        self._save_model()
+        X_data, y_data = self._pool_data()
+        self._refit_model(best_results.config, X_data, y_data)
+        y_pred = self._predict_pooled_data(X_data)
+        self.log_session(results, best_results, y_data, y_pred)
 
-    def _refit_model(self, best_config):
+    def _pool_data(self):
         X_data, y_data = self.data.X_train, self.data.y_train
         if self.data.X_valid is not None:
             X_data += self.data.X_valid
             y_data += self.data.y_valid
+        return X_data, y_data
 
+    def _refit_model(self, best_config, X_data, y_data):
         self.model = clone(self.model)
         self.model.set_params(**best_config)
         self.model.fit(X_data, y_data)
 
-    def _save_model(self):
-        write_pickle(self.model, self.save_dir / "model.pkl")
-
-    def _save_report(self, report, fname, format="txt"):
-        save_path = os.path.join(self.save_dir, fname)
-        if format == "txt":
-            report = str(report)
-            write_txt(report, save_path)
-        elif format == "json":
-            write_json(report, save_path)
-        else:
-            raise ValueError(f"Unknown format: {format}")
-
-    def _create_train_report(self, results, best_results):
-        best_config = best_results.config
-        best_metric = best_results.metrics[self.scoring_metric]
-        best_all_params = best_results.metrics
-        all_df = results.get_dataframe().to_string()
-
-        self.logger.info(f"Best hyperparameters found were: {best_config}")
-        self.logger.info(f"Best {self.scoring_metric}: {best_metric}\n")
-        self._save_report(best_config, "best_config_train.json", format="json")
-        self._save_report(best_all_params, "best_all_params_train.json", format="json")
-        self._save_report(best_metric, "best_metric_train.txt", format="txt")
-        self._save_report(all_df, "all_df_train.txt", format="txt")
+    def _predict_pooled_data(self, X_data):
+        return self.model.predict(X_data)
 
     @staticmethod
     def _modify_params(config):
@@ -102,8 +91,18 @@ class BaseOptimizer:
         return tuned_parameters
 
     @abstractmethod
+    def load_data(self):
+        """Data needs to be loaded into self.data structure"""
+        raise NotImplementedError
+
+    @abstractmethod
     def perform_search(self):
         """Seach of hyperparameters implemented here"""
+        raise NotImplementedError
+
+    @abstractmethod
+    def log_session(self, results, best_results, y_test, y_pred):
+        """Log session implemented here"""
         raise NotImplementedError
 
 
@@ -138,7 +137,10 @@ class OptimizerClassification(BaseOptimizer):
             experiment_name=self.exper_name,
             save_artifact=True,
         )
-        run_config = RunConfig(name=self.name, callbacks=[mlflow_callback])
+        run_config = RunConfig(
+            name=self.name,
+            #    callbacks=[mlflow_callback]
+        )
         tuner = tune.Tuner(
             trainable=self._trainable,
             param_space=self.tuned_params,
@@ -180,3 +182,43 @@ class OptimizerClassification(BaseOptimizer):
         self.model = clone(self.model)
         self.model.set_params(**config)
         return self.scorer(self.model)
+
+    def log_session(self, results, best_results, y_test, y_pred):
+        best_params = best_results.config
+        best_metric = best_results.metrics[self.scoring_metric]
+        study_best_params = best_results.metrics
+
+        # get study result and order by scoring metric
+        ascending = False if self.scoring_mode == "max" else True
+        study_df = results.get_dataframe().sort_values(by=self.scoring_metric, ascending=ascending)
+        study_df = study_df.to_string()
+
+        # Log metrics and parameters and model
+        mlflow.sklearn.log_model(self.model, "model")
+        mlflow.log_params(best_params)
+        mlflow.log_metrics({self.scoring_metric: best_metric})
+
+        performance = calculate_classification_metrics(y_test, y_pred)
+        mlflow.log_metrics({"precision_avg": performance["overall"]["precision"]})
+        mlflow.log_metrics({"recall_avg": performance["overall"]["recall"]})
+        mlflow.log_metrics({"f1_avg": performance["overall"]["f1"]})
+
+        # Log artifacts
+        with tempfile.TemporaryDirectory() as dp:
+            ensure_dir(Path(dp) / "results")
+            ensure_dir(Path(dp) / "configs")
+            ensure_dir(Path(dp) / "study")
+
+            write_json(best_params, Path(dp, "configs/best_params.json"))
+            write_json(study_best_params, Path(dp, "study/study_best_params.json"))
+            write_json({self.scoring_metric: best_metric}, Path(dp, "results/best_valid_metric.json"))
+            write_json(performance, Path(dp, "results/performance.json"))
+            write_json(self.config, Path(dp, "configs/config.json"))
+            write_txt(study_df, Path(dp, "study/study_df.txt"))
+            mlflow.log_artifacts(dp)
+
+        # log info
+        self.logger.info(f"Best hyperparameters found were: {best_params}")
+        self.logger.info(f"Best {self.scoring_metric}: {best_metric}")
+        self.logger.info(f"Run ID: {mlflow.active_run().info.run_id}")
+        self.logger.info(json.dumps(performance, indent=4))

@@ -46,7 +46,7 @@ def train_trad(config):
     )
     optimizer.load_data()
 
-    mlflow.set_experiment(experiment_name=config.exper_name)
+    mlflow.set_experiment(experiment_name=f"train_{config.exper_name}")
     with mlflow.start_run(run_name=config.run_id):
         optimizer.optimize()
 
