@@ -1,9 +1,12 @@
 import argparse
+import json
+import tempfile
+from pathlib import Path
 
+import mlflow
 import ray
 import sklearn.model_selection as model_selection_
 from sklearn.metrics import classification_report, confusion_matrix
-from sympy import proper_divisor_count
 
 import data_loader.data_loaders as data_loaders_
 import data_loader.data_loaders as module_data
@@ -11,11 +14,13 @@ import models_trad.model as models_
 import models_trad.optimizer as optimizers_
 from models_trad.helpers import convert_images_to_1d
 from utils.parse_config import ParseConfig
-from utils.utils import read_pickle
+from utils.tools import calculate_classification_metrics
+from utils.utils import ensure_dir, read_pickle, write_json, write_txt
 
 
 def test_trad(config):
     logger = config.get_logger("test")
+    logger.info("Loading checkpoint: {} ...".format(config.resume))
 
     # setup data_loader instances
     data_loader = getattr(module_data, config["data_loader"]["type"])(
@@ -33,15 +38,27 @@ def test_trad(config):
     # convert to signatures
     X_test, y_test = convert_images_to_1d(data_loader)
 
-    logger.info("Loading checkpoint: {} ...".format(config.resume))
-    model = read_pickle(config.resume / "model.pkl")
-
-    # log general info
-    logger.info(model)
-    logger.info(f"Total images for testing: {len(data_loader.dataset)}")
-
+    # load model from registry
+    model = read_pickle(config.resume / "artifacts/model/model.pkl")
     y_pred = model.predict(X_test)
-    logger.info(f"Classification report on test data:\n{classification_report(y_test, y_pred)}")
+    clf_report = classification_report(y_test, y_pred)
+
+    logger.info(f"Model: {model}")
+    logger.info(f"Total images for testing: {len(data_loader.dataset)}")
+    logger.info(f"Classification report on test data:\n{clf_report}")
+
+    mlflow.set_experiment(experiment_name=f"test_{config.exper_name}")
+    with mlflow.start_run(run_name=config.run_id):
+        performance = calculate_classification_metrics(y_test, y_pred)
+        mlflow.log_metrics({"precision_avg": performance["overall"]["precision"]})
+        mlflow.log_metrics({"recall_avg": performance["overall"]["recall"]})
+        mlflow.log_metrics({"f1_avg": performance["overall"]["f1"]})
+
+        with tempfile.TemporaryDirectory() as dp:
+            ensure_dir(Path(dp) / "results")
+            write_json(performance, Path(dp, "results/performance.json"))
+            write_txt(clf_report, Path(dp, "results/classification_report.txt"))
+            mlflow.log_artifacts(dp)
 
 
 if __name__ == "__main__":

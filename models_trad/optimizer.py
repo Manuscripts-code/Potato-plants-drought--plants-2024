@@ -18,6 +18,7 @@ from ray.air.config import RunConfig, ScalingConfig
 from ray.tune.schedulers import HyperBandScheduler
 from ray.tune.search.hyperopt import HyperOptSearch
 from sklearn.base import clone
+from sklearn.metrics import classification_report, confusion_matrix
 
 from configs import configs
 from utils.tools import calculate_classification_metrics
@@ -202,6 +203,7 @@ class OptimizerClassification(BaseOptimizer):
         mlflow.log_metrics({"precision_avg": performance["overall"]["precision"]})
         mlflow.log_metrics({"recall_avg": performance["overall"]["recall"]})
         mlflow.log_metrics({"f1_avg": performance["overall"]["f1"]})
+        clf_report = classification_report(y_test, y_pred)
 
         # Log artifacts
         with tempfile.TemporaryDirectory() as dp:
@@ -215,10 +217,11 @@ class OptimizerClassification(BaseOptimizer):
             write_json(performance, Path(dp, "results/performance.json"))
             write_json(self.config, Path(dp, "configs/config.json"))
             write_txt(study_df, Path(dp, "study/study_df.txt"))
+            write_txt(clf_report, Path(dp, "results/classification_report.txt"))
             mlflow.log_artifacts(dp)
 
         # log info
         self.logger.info(f"Best hyperparameters found were: {best_params}")
         self.logger.info(f"Best {self.scoring_metric}: {best_metric}")
         self.logger.info(f"Run ID: {mlflow.active_run().info.run_id}")
-        self.logger.info(json.dumps(performance, indent=4))
+        self.logger.info(f"Classification report on train data:\n{clf_report}")
