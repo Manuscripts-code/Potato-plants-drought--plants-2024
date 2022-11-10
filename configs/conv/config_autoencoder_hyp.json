@@ -29,7 +29,8 @@
     },
     "loss": "bce_loss",
     "metrics": [
-        "accuracy"
+        "accuracy",
+        "f1"
     ],
     "lr_scheduler": {
         "type": "StepLR",

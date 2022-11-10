@@ -1,12 +1,15 @@
+import tempfile
 from abc import abstractmethod
+from pathlib import Path
 
+import mlflow
 import numpy as np
 import torch
 from numpy import inf
 from torchvision.utils import make_grid
-import mlflow
 
-from utils.utils import inf_loop
+from configs import configs
+from utils.utils import ensure_dir, inf_loop, write_json, write_txt
 
 from .helpers import MetricTracker, TensorboardWriter
 
@@ -44,8 +47,7 @@ class BaseTrainer:
                 self.early_stop = inf
 
         self.start_epoch = 1
-
-        self.checkpoint_dir = config.save_dir
+        self.checkpoints_dir, self.save_dir = None, None
 
         # setup visualization writer instance
         self.writer = TensorboardWriter(config.save_dir, self.logger, cfg_trainer["tensorboard"])
@@ -66,6 +68,10 @@ class BaseTrainer:
         """
         Full training logic
         """
+        self.save_dir = self._set_save_dir()
+        self.checkpoints_dir = ensure_dir(self.save_dir / "artifacts/checkpoints")
+        self._save_config()
+        
         not_improved_count = 0
         for epoch in range(self.start_epoch, self.epochs + 1):
             result = self._train_epoch(epoch)
@@ -114,6 +120,21 @@ class BaseTrainer:
             if epoch % self.save_period == 0:
                 self._save_checkpoint(epoch, save_best=best)
 
+    def _set_save_dir(self):
+        run_id = mlflow.active_run().info.run_id
+        experiment_id = mlflow.get_run(run_id=run_id).info.experiment_id
+        save_dir = Path(configs.MODEL_REGISTRY, experiment_id, run_id)
+        return save_dir
+
+    def _save_config(self):
+        """
+        Saving artifacts
+        """
+        with tempfile.TemporaryDirectory() as dp:
+            ensure_dir(Path(dp) / "configs")
+            write_json(self.config.config, Path(dp, "configs/config.json"))
+            mlflow.log_artifacts(dp)
+
     def _save_checkpoint(self, epoch, save_best=False):
         """
         Saving checkpoints
@@ -131,11 +152,13 @@ class BaseTrainer:
             "monitor_best": self.mnt_best,
             "config": self.config,
         }
-        filename = str(self.checkpoint_dir / "checkpoint-epoch{}.pth".format(epoch))
+        filename = str(
+            self.checkpoints_dir / "checkpoint-epoch{}.pth".format(epoch)
+        )
         torch.save(state, filename)
         self.logger.info("Saving checkpoint: {} ...".format(filename))
         if save_best:
-            best_path = str(self.checkpoint_dir / "model_best.pth")
+            best_path = str(self.checkpoints_dir / "model_best.pth")
             torch.save(state, best_path)
             self.logger.info("Saving current best: model_best.pth ...")
 
