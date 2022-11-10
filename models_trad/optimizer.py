@@ -125,13 +125,15 @@ class OptimizerClassification(BaseOptimizer):
 
     def perform_search(self):
         self._init_scorer()
-        search_alg = HyperOptSearch()
+        search_alg = HyperOptSearch(random_state_seed=0)
         scheduler = HyperBandScheduler()
         tune_config = tune.TuneConfig(
             mode=self.scoring_mode,
             search_alg=search_alg,
             scheduler=scheduler,
             num_samples=self.num_samples,
+            # max_concurrent_trials=10,
+            metric=self.scoring_metric,
         )
         mlflow_callback = MLflowLoggerCallback(
             tracking_uri=configs.TRACKING_URI,
@@ -177,7 +179,7 @@ class OptimizerClassification(BaseOptimizer):
 
     def _trainable(self, config):
         score = self._objective(config)
-        session.report({self.scoring_metric: score, "_metric": score})
+        session.report({self.scoring_metric: score}, checkpoint=None)
 
     def _objective(self, config):
         self.model = clone(self.model)
