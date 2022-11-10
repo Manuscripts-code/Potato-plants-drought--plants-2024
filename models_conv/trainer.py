@@ -133,6 +133,7 @@ class BaseTrainer:
         with tempfile.TemporaryDirectory() as dp:
             ensure_dir(Path(dp) / "configs")
             write_json(self.config.config, Path(dp, "configs/config.json"))
+            write_txt(str(self.model), Path(dp, "configs/model_arch.txt"))
             mlflow.log_artifacts(dp)
 
     def _save_checkpoint(self, epoch, save_best=False):
