@@ -1,22 +1,25 @@
 import argparse
-import os
+import tempfile
+from pathlib import Path
 
-import matplotlib.pyplot as plt
+import mlflow
 import numpy as np
 import torch
 from rich.progress import track
 from sklearn.metrics import classification_report
-from tqdm import tqdm
 
 import data_loader.data_loaders as module_data
 import models_conv.loss as module_loss
 import models_conv.metric as module_metric
 import models_conv.model as module_arch
 from utils.parse_config import ParseConfig
+from utils.tools import calculate_classification_metrics
+from utils.utils import ensure_dir, write_json, write_txt
 
 
 def test_conv(config):
     logger = config.get_logger("test")
+    logger.info("Loading checkpoint: {} ...".format(config.resume))
 
     # setup data_loader instances
     data_loader = getattr(module_data, config["data_loader"]["type"])(
@@ -39,8 +42,7 @@ def test_conv(config):
     loss_fn = getattr(module_loss, config["loss"])
     metric_fns = [getattr(module_metric, met) for met in config["metrics"]]
 
-    logger.info("Loading checkpoint: {} ...".format(config.resume))
-    checkpoint = torch.load(config.resume / "model_best.pth")
+    checkpoint = torch.load(config.resume / "artifacts/checkpoints" / "model_best.pth")
     state_dict = checkpoint["state_dict"]
     if config["n_gpu"] > 1:
         model = torch.nn.DataParallel(model)
@@ -83,11 +85,24 @@ def test_conv(config):
     n_samples = len(data_loader.sampler)
     log = {"loss": total_loss / n_samples}
     log.update({met.__name__: total_metrics[i].item() / n_samples for i, met in enumerate(metric_fns)})
+
+    y_test, y_pred = np.array(target_list).flatten(), np.array(pred_list).flatten().round()
+    clf_report = classification_report(y_test, y_pred)
     logger.info(log)
-    logger.info(
-        f"Classification report on test data:\n"
-        f"{classification_report(np.array(target_list).flatten(), np.array(pred_list).flatten().round())}"
-    )
+    logger.info(f"Classification report on test data:\n{clf_report}")
+
+    mlflow.set_experiment(experiment_name=f"test_{config.exper_name}")
+    with mlflow.start_run(run_name=config.run_id):
+        performance = calculate_classification_metrics(y_test, y_pred)
+        mlflow.log_metrics({"precision_avg": performance["overall"]["precision"]})
+        mlflow.log_metrics({"recall_avg": performance["overall"]["recall"]})
+        mlflow.log_metrics({"f1_avg": performance["overall"]["f1"]})
+
+        with tempfile.TemporaryDirectory() as dp:
+            ensure_dir(Path(dp) / "results")
+            write_json(performance, Path(dp, "results/performance.json"))
+            write_txt(clf_report, Path(dp, "results/classification_report.txt"))
+            mlflow.log_artifacts(dp)
 
 
 if __name__ == "__main__":

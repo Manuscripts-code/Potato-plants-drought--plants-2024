@@ -168,7 +168,7 @@ class BaseTrainer:
 
         :param resume_path: Checkpoint path to be resumed
         """
-        resume_path = str(resume_path / "model_best.pth")
+        resume_path = str(resume_path / "artifacts/checkpoints" / "model_best.pth")
         self.logger.info("Loading checkpoint: {} ...".format(resume_path))
         checkpoint = torch.load(resume_path)
         self.start_epoch = checkpoint["epoch"] + 1
