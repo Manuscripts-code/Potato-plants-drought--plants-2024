@@ -15,6 +15,14 @@ class Sampler(Protocol):
     ) -> tuple[np.ndarray, np.ndarray]:
         ...
 
+    def sample(self, images, classes, train_index, test_index):
+        if self.training:
+            images, classes = images[train_index], classes[train_index]
+        else:
+            images, classes = images[test_index], classes[test_index]
+        images, classes = shuffle(images, classes, random_state=0)
+        return images, classes
+
 
 class RandomSampler(Sampler):
     def __init__(self, training, train_test_split_size):
@@ -32,13 +40,7 @@ class RandomSampler(Sampler):
 
         test_index = idx_full[0:len_test]
         train_index = np.delete(idx_full, np.arange(0, len_test))
-
-        if self.training:
-            images, classes = images[train_index], classes[train_index]
-        else:
-            images, classes = images[test_index], classes[test_index]
-        images, classes = shuffle(images, classes, random_state=0)
-        return images, classes
+        return self.sample(images, classes, train_index, test_index)
 
 
 class StratifySampler(Sampler):
@@ -57,13 +59,7 @@ class StratifySampler(Sampler):
             random_state=0,
             shuffle=True,
         )
-
-        if self.training:
-            images, classes = images[train_index], classes[train_index]
-        else:
-            images, classes = images[test_index], classes[test_index]
-        images, classes = shuffle(images, classes, random_state=0)
-        return images, classes
+        return self.sample(images, classes, train_index, test_index)
 
 
 class GroupSampler(Sampler):
@@ -78,13 +74,7 @@ class GroupSampler(Sampler):
         splitter = GroupShuffleSplit(test_size=self.train_test_split_size, n_splits=2, random_state=0)
         split = splitter.split(idx_full, groups=labels)
         train_index, test_index = next(split)
-
-        if self.training:
-            images, classes = images[train_index], classes[train_index]
-        else:
-            images, classes = images[test_index], classes[test_index]
-        images, classes = shuffle(images, classes, random_state=0)
-        return images, classes
+        return self.sample(images, classes, train_index, test_index)
 
 
 class ManualGroupSamplerKrka(Sampler):
@@ -96,8 +86,8 @@ class ManualGroupSamplerKrka(Sampler):
         labels_unique = np.unique(labels)
 
         # generate list by labels of treatment
-        K_list_unique = [label for label in labels_unique if label.split("-")[1] == "K"]
-        S_list_unique = [label for label in labels_unique if label.split("-")[1] == "S"]
+        K_list_unique = [label for label in labels_unique if label.split("-")[:2] == ['KK', 'K']]
+        S_list_unique = [label for label in labels_unique if label.split("-")[:2] == ['KK', 'S']]
 
         # remove because it has small number of samples, and to have same K and S
         K_list_unique.remove("KK-K-09")
@@ -129,23 +119,18 @@ class ManualGroupSamplerKrka(Sampler):
         train_index = self.stratify_classes(classes, train_index)
         test_index = self.stratify_classes(classes, test_index)
 
-        if self.training:
-            images, classes = images[train_index], classes[train_index]
-        else:
-            images, classes = images[test_index], classes[test_index]
-        images, classes = shuffle(images, classes, random_state=0)
-        return images, classes
+        return self.sample(images, classes, train_index, test_index)
 
     @staticmethod
     def stratify_classes(classes, set_indices):
         random.seed(0)
-        # calculate number of samples per each classes
-        samples_per_class = np.bincount(classes[set_indices])
+        # display unique classes and calculate number of samples per each classes
+        unique_classes, samples_per_class = np.unique(classes[set_indices], return_counts=True)
         # min samples
         samples_min = samples_per_class.min()
 
         class_indices = []
-        for cls_ in np.unique(classes):
+        for cls_ in unique_classes:
             indices = np.where(classes[set_indices] == cls_)[0]
             # under-sample without replacement
             indices = random.sample(indices.tolist(), samples_min)
