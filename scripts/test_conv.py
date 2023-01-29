@@ -91,7 +91,7 @@ def test_conv(config):
     logger.info(f"Classification report on test data:\n{clf_report}")
 
     mlflow.set_experiment(experiment_name=f"test_{config.exper_name}")
-    with mlflow.start_run(run_name=config.run_id):
+    with mlflow.start_run(run_name=f"{config.run_id}__test"):
         performance = calculate_classification_metrics(y_test, y_pred)
         mlflow.log_metrics({"precision_avg": performance["overall"]["precision"]})
         mlflow.log_metrics({"recall_avg": performance["overall"]["recall"]})
@@ -99,8 +99,11 @@ def test_conv(config):
 
         with tempfile.TemporaryDirectory() as dp:
             ensure_dir(Path(dp) / "results")
+            ensure_dir(Path(dp) / "configs")
             write_json(performance, Path(dp, "results/performance.json"))
             write_txt(clf_report, Path(dp, "results/classification_report.txt"))
+            write_json(config.config, Path(dp, "configs/config.json"))
+            write_txt(config.resume.name, Path(dp, "configs/train_runID.txt"))
             mlflow.log_artifacts(dp)
 
 

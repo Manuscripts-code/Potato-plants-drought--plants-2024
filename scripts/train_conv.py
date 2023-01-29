@@ -70,7 +70,7 @@ def train_conv(config):
 
     # setup mlflow experiment name
     mlflow.set_experiment(experiment_name=f"train_{config.exper_name}")
-    with mlflow.start_run(run_name=config.run_id):
+    with mlflow.start_run(run_name=f"{config.run_id}__train"):
         trainer.train()
 
 
