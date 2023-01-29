@@ -16,6 +16,7 @@ from .transformations import (
     NoTransformation,
     RandomCrop,
     RandomMirror,
+    SavgolTransform
 )
 
 # hardcoded bands to remove
@@ -58,7 +59,8 @@ class PlantsDataset(Dataset):
                 transforms.ToTensor(),
             ]
         )
-        transform_during_loading = transforms.Compose([AreaNormalization()])
+        # transform_during_loading = transforms.Compose([AreaNormalization()])
+        # transform_during_loading = transforms.Compose([SavgolTransform()])
         transform_during_loading = transforms.Compose([NoTransformation()])
         return transform_train, transform_test, transform_during_loading
 
@@ -78,12 +80,12 @@ class PlantsDataset(Dataset):
 
             # convert image to array
             image_arr = image.to_numpy()
-            # remove noisy channels
-            image_arr = np.delete(image_arr, NOISY_BANDS, axis=2)
             # clip between 0 and 1
             image_arr = image_arr.clip(0, 1)
             # transform by transformations defined during loading
             image_arr = self.transform_during_loading(image_arr)
+            # remove noisy channels
+            image_arr = np.delete(image_arr, NOISY_BANDS, axis=2)
 
             images.append(image_arr)
             labels.append(image_label)

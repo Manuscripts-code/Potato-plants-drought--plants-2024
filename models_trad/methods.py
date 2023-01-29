@@ -3,6 +3,15 @@ from scipy.signal import savgol_filter
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.svm import SVC
 from xgboost import XGBClassifier
+from sklearn.cross_decomposition import PLSRegression
+
+
+class PLSRegressionWrapper(PLSRegression):
+    def transform(self, X):
+        return super().transform(X)
+
+    def fit_transform(self, X, Y):
+        return self.fit(X, Y).transform(X)
 
 
 class SavgolWrapper(BaseEstimator, TransformerMixin):
@@ -24,4 +33,4 @@ class SavgolWrapper(BaseEstimator, TransformerMixin):
         return np.array(signatures_sav)
 
 
-METHODS = {"SVC": SVC, "XGB": XGBClassifier, "Savgol": SavgolWrapper}
+METHODS = {"SVC": SVC, "XGB": XGBClassifier, "savgol": SavgolWrapper, "PLS": PLSRegressionWrapper}

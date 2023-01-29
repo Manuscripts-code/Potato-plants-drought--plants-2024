@@ -3,6 +3,7 @@ from typing import Protocol
 
 import numpy as np
 import torch
+from scipy.signal import savgol_filter
 
 
 class Transform(Protocol):
@@ -77,6 +78,25 @@ class AreaNormalization(Transform):
         if area == 0:
             return signal
         return signal / area
+
+
+class SavgolTransform(Transform):
+    WIN_LENGTH = 5
+    POLYORDER = 2
+    DERIV = 2
+
+    def __call__(self, image):
+        image = self._image_normalization(image, self._signal_normalize)
+        return image.astype(dtype="float32")
+
+    @staticmethod
+    def _image_normalization(image, func1d):
+        return np.apply_along_axis(func1d, axis=2, arr=image)
+
+    def _signal_normalize(self, signal):
+        if np.isnan(signal).any():
+            return signal
+        return savgol_filter(signal, self.WIN_LENGTH, self.POLYORDER, self.DERIV)
 
 
 class NoTransformation(Transform):
