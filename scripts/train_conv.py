@@ -9,6 +9,7 @@ import data_loader.data_loaders as module_data
 import models_conv.loss as module_loss
 import models_conv.metric as module_metric
 import models_conv.model as module_arch
+from configs import configs
 from models_conv.helpers import prepare_device
 from models_conv.trainer import Trainer
 from utils.parse_config import ParseConfig
@@ -25,7 +26,7 @@ def train_conv(config):
     logger = config.get_logger("train")
 
     # setup data_loader instances
-    data_loader = config.init_obj("data_loader", module_data)
+    data_loader = config.init_obj("data_loader", module_data, data_dir=configs.DATA_DIR)
     valid_data_loader = data_loader.split_validation()
 
     # build model architecture, then print to console

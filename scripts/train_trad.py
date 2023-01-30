@@ -9,6 +9,7 @@ import sklearn.model_selection as model_selection_
 import data_loader.data_loaders as data_loaders_
 import models_trad.model as models_
 import models_trad.optimizer as optimizers_
+from configs import configs
 from utils.parse_config import ParseConfig
 from utils.utils import read_json
 
@@ -18,7 +19,7 @@ def train_trad(config):
     logger = config.get_logger("train")
 
     # setup data_loader instances
-    data_loader = config.init_obj("data_loader", data_loaders_)
+    data_loader = config.init_obj("data_loader", data_loaders_, data_dir=configs.DATA_DIR)
     valid_data_loader = data_loader.split_validation()
 
     # initialize model and print to console

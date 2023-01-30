@@ -12,6 +12,7 @@ import data_loader.data_loaders as data_loaders_
 import data_loader.data_loaders as module_data
 import models_trad.model as models_
 import models_trad.optimizer as optimizers_
+from configs import configs
 from models_trad.helpers import convert_images_to_1d
 from utils.parse_config import ParseConfig
 from utils.tools import calculate_classification_metrics
@@ -24,7 +25,7 @@ def test_trad(config):
 
     # setup data_loader instances
     data_loader = getattr(module_data, config["data_loader"]["type"])(
-        config["data_loader"]["args"]["data_dir"],
+        configs.DATA_DIR,
         config["data_loader"]["args"]["dataset"],
         config["data_loader"]["args"]["data_sampler"],
         train_test_split_size=config["data_loader"]["args"]["train_test_split_size"],

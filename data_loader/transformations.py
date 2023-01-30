@@ -81,9 +81,10 @@ class AreaNormalization(Transform):
 
 
 class SavgolTransform(Transform):
-    WIN_LENGTH = 5
-    POLYORDER = 2
-    DERIV = 2
+    def __init__(self, win_length, polyorder=2, deriv=2):
+        self.WIN_LENGTH = win_length
+        self.POLYORDER = polyorder
+        self.DERIV = deriv
 
     def __call__(self, image):
         image = self._image_normalization(image, self._signal_normalize)

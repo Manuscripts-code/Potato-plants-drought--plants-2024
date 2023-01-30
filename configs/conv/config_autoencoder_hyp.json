@@ -8,7 +8,6 @@
     "data_loader": {
         "type": "HypDataLoader",
         "args": {
-            "data_dir": "E:\\janez\\data\\sliced_converted_images\\slikanje_2022_rad_4",
             "dataset": "PlantsDataset",
             "data_sampler": "ManualGroupSamplerKrka",
             "batch_size": 32,

@@ -134,3 +134,7 @@ experiments
 
 # vscode
 .vscode
+
+# images
+*.img
+*.hdr
