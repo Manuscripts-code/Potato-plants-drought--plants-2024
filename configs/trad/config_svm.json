@@ -4,7 +4,7 @@
     "model": {
         "type": "Model",
         "args": {
-            "pipeline": ["SVC"],
+            "pipeline": ["PLS", "SVC"],
             "unions": {
             }
         }
@@ -24,7 +24,8 @@
     "tuned_parameters":{
                         "SVC__kernel": ["CHOICE", "rbf"],
                         "SVC__gamma": ["LOG_UNIFORM", 1e-4, 1],
-                        "SVC__C": ["LOG_UNIFORM", 1, 1000]
+                        "SVC__C": ["LOG_UNIFORM", 1, 1000],
+                        "PLS__n_components": ["RAND_INT", 1, 30]
                     },
 
     "optimizer": "OptimizerClassification",

@@ -51,6 +51,7 @@ if __name__ == "__main__":
         CustomArgs(
             ["-vs", "--valid_split"], type=float, target="data_loader;args;train_valid_split_size"
         ),
+        CustomArgs(["--lr", "--learning_rate"], type=float, target="optimizer;args;lr"),
     ]
     config = ParseConfig.from_args(args, options)
     main(config)
