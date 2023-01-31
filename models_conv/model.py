@@ -71,7 +71,7 @@ class BasicConv(nn.Module):
         return self.body(x)
 
 
-class BasicBlock(nn.Module):
+class BasicResidualBlock(nn.Module):
     expansion = 1
 
     def __init__(
@@ -86,39 +86,38 @@ class BasicBlock(nn.Module):
         normalization=True,
         activation=nn.ReLU(),
     ):
-        super(BasicBlock, self).__init__()
+        super(BasicResidualBlock, self).__init__()
         if groups != 1 or base_width != 64:
             raise ValueError("BasicBlock only supports groups=1 and base_width=64")
         if dilation > 1:
             raise NotImplementedError("Dilation > 1 not supported in BasicBlock")
-        # Both self.conv1 and self.downsample layers downsample the input when stride != 1
 
         self.conv1 = BasicConv(
-                        inplanes,
-                        planes,
-                        kernel_size=3,
-                        stride=stride,
-                        padding=1,
-                        groups=1,
-                        bias=False,
-                        dilation=1,
-                        normalization=normalization,
-                        activation=False,
-                    )
+            inplanes,
+            planes,
+            kernel_size=3,
+            stride=stride,
+            padding=1,
+            groups=1,
+            bias=False,
+            dilation=1,
+            normalization=normalization,
+            activation=False,
+        )
 
         self.act = activation
         self.conv2 = BasicConv(
-                        planes,
-                        planes,
-                        kernel_size=3,
-                        stride=1,
-                        padding=1,
-                        groups=1,
-                        bias=False,
-                        dilation=1,
-                        normalization=normalization,
-                        activation=False,
-                    )
+            planes,
+            planes,
+            kernel_size=3,
+            stride=1,
+            padding=1,
+            groups=1,
+            bias=False,
+            dilation=1,
+            normalization=normalization,
+            activation=False,
+        )
 
         self.downsample = downsample
         self.stride = stride
@@ -135,43 +134,54 @@ class BasicBlock(nn.Module):
 
         out += identity
         out = self.act(out)
+        return out
 
+
+class SpectralAttentionBlock(nn.Module):
+    def __init__(self, inplanes, reduction=2):
+        super(SpectralAttentionBlock, self).__init__()
+
+        self.inplanes = inplanes
+
+        mid_planes = inplanes // reduction
+        self.fc1 = nn.Linear(inplanes, mid_planes)
+        self.fc2 = nn.Linear(mid_planes, inplanes)
+        self.act1 = nn.ReLU()
+        self.act2 = nn.Sigmoid()
+
+    def forward(self, x):
+        identity = x
+        out = torch.mean(x, dim=(2, 3))
+        out = self.fc1(out)
+        out = self.act1(out)
+        out = self.fc2(out)
+        out = self.act2(out)
+        out = out[:, :, None, None]
+        out = out * identity
         return out
 
 
 class ConvNet(BaseModel):
     def __init__(
         self,
-        block=BasicBlock,
-        layers=[2, 2, 2, 2],
+        layers=[1, 1, 1, 1],
         img_channels=373,  # number of spectral bands
         res_channels=64,
         num_classes=1,
         zero_init_residual=False,
         groups=1,
         width_per_group=64,
-        replace_stride_with_dilation=None,
         normalization=True,
-        activation=nn.ReLU(),
     ):
         super(ConvNet, self).__init__()
 
         self.inplanes = res_channels
         self.dilation = 1
-        if replace_stride_with_dilation is None:
-            # each element in the tuple indicates if we should replace
-            # the 2x2 stride with a dilated convolution instead
-            replace_stride_with_dilation = [False, False, False]
-        if len(replace_stride_with_dilation) != 3:
-            raise ValueError(
-                "replace_stride_with_dilation should be None "
-                "or a 3-element tuple, got {}".format(replace_stride_with_dilation)
-            )
         self.groups = groups
         self.base_width = width_per_group
         self.normalization = normalization
-        self.activation = activation
 
+        self.spectral = SpectralAttentionBlock(img_channels)
         self.conv1 = BasicConv(
             img_channels,
             self.inplanes,
@@ -180,70 +190,31 @@ class ConvNet(BaseModel):
             padding=3,
             bias=False,
             normalization=self.normalization,
+            act_first=False,
         )
-
-        self.act = activation
         self.maxpool = nn.MaxPool2d(3, stride=2, padding=1, dilation=1)
         self.avgpool = nn.AdaptiveAvgPool2d(1)
-
-        self.layer1 = self._make_layer(block, res_channels, layers[0])
-        self.layer2 = self._make_layer(
-            block, res_channels * 2, layers[1], stride=2, dilate=replace_stride_with_dilation[0]
-        )
-        self.layer3 = self._make_layer(
-            block, res_channels * 4, layers[2], stride=2, dilate=replace_stride_with_dilation[1]
-        )
-        self.layer4 = self._make_layer(
-            block, res_channels * 8, layers[3], stride=2, dilate=replace_stride_with_dilation[2]
-        )
-
+        self.layer1 = self._make_layer(BasicResidualBlock, res_channels, layers[0])
+        self.layer2 = self._make_layer(BasicResidualBlock, res_channels * 2, layers[1], stride=2)
+        self.layer3 = self._make_layer(BasicResidualBlock, res_channels * 4, layers[2], stride=2)
+        self.layer4 = self._make_layer(BasicResidualBlock, res_channels * 8, layers[3], stride=2)
         self.fc = nn.Sequential(
-            nn.Linear(res_channels * 8 * block.expansion, num_classes),
-            nn.Sigmoid()
+            nn.Linear(res_channels * 8 * BasicResidualBlock.expansion, num_classes), nn.Sigmoid()
         )
+        self._init_weights(zero_init_residual)
 
-        for m in self.modules():
-            if isinstance(m, (nn.Conv1d, nn.Conv2d, nn.Conv3d)):
-                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
-            elif isinstance(
-                m,
-                (
-                    (
-                        nn.BatchNorm1d,
-                        nn.BatchNorm2d,
-                        nn.BatchNorm3d,
-                        nn.GroupNorm,
-                        nn.LayerNorm,
-                        nn.InstanceNorm1d,
-                        nn.InstanceNorm2d,
-                        nn.InstanceNorm3d,
-                    )
-                ),
-            ):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
-
-        if zero_init_residual:
-            for m in self.modules():
-                if isinstance(m, BasicBlock):
-                    nn.init.constant_(m.bn2.weight, 0)
-
-    def _make_layer(self, block, planes, blocks, stride=1, dilate=False):
+    def _make_layer(self, block, planes, blocks, stride=1):
         downsample = None
-        previous_dilation = self.dilation
-        if dilate:
-            self.dilation *= stride
-            stride = 1
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = BasicConv(
-                            self.inplanes,
-                            planes * block.expansion,
-                            kernel_size=1,
-                            stride=stride,
-                            bias=False,
-                            normalization=self.normalization,
-                            activation=False,
-                        )
+                self.inplanes,
+                planes * block.expansion,
+                kernel_size=1,
+                stride=stride,
+                bias=False,
+                normalization=self.normalization,
+                activation=False,
+            )
 
         layers = []
         layers.append(
@@ -254,9 +225,8 @@ class ConvNet(BaseModel):
                 downsample,
                 self.groups,
                 self.base_width,
-                previous_dilation,
+                self.dilation,
                 normalization=self.normalization,
-                activation=self.activation,
             )
         )
         self.inplanes = planes * block.expansion
@@ -269,19 +239,35 @@ class ConvNet(BaseModel):
                     base_width=self.base_width,
                     dilation=self.dilation,
                     normalization=self.normalization,
-                    activation=self.activation,
                 )
             )
 
         return nn.Sequential(*layers)
 
-    def forward(self, x):
-        # See note [TorchScript super()]
-        x = self.conv1(x)
-        x = self.act(x)
-        x = self.maxpool(x)
+    def _init_weights(self, zero_init_residual):
+        for m in self.modules():
+            if isinstance(m, (nn.Conv1d, nn.Conv2d, nn.Conv3d)):
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, SpectralAttentionBlock):
+                nn.init.constant_(m.fc1.weight, 1)
+                nn.init.constant_(m.fc1.bias, 1)
+                nn.init.constant_(m.fc2.weight, 1)
+                nn.init.constant_(m.fc2.bias, 1)
 
-        x = self.layer1(x)
+        if zero_init_residual:
+            for m in self.modules():
+                if isinstance(m, BasicResidualBlock):
+                    nn.init.constant_(m.bn2.weight, 0)
+
+    def forward(self, x):
+        x = self.spectral(x)
+        x = self.conv1(x)  # torch.Size([32, 64, 32, 32])
+        x = self.maxpool(x)  # torch.Size([32, 64, 16, 16])
+
+        x = self.layer1(x)  # torch.Size([32, 64, 16, 16])
         x = self.layer2(x)
         x = self.layer3(x)
         x = self.layer4(x)
