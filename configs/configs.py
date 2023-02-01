@@ -26,6 +26,8 @@ SAVE_CASHED_IMAGES = True
 NOISY_BANDS = np.concatenate(
 	[np.arange(26), np.arange(140, 171), np.arange(430, 448)]
 )  # hardcoded bands to remove
+IMG_SIZE = 50
+LAYERS = [2, 2, 2, 2]
 GROUPS = {
 	# groupes by labels
 	"KK-K": "KIS_krka_control",
@@ -36,13 +38,13 @@ GROUPS = {
 TRANSFORM_TRAIN = transforms.Compose(
 	[
 		transforms_hyp.RandomMirror(),
-		transforms_hyp.RandomCrop(32),
+		transforms_hyp.RandomCrop(IMG_SIZE),
 		transforms.ToTensor(),
 	]
 )
 TRANSFORM_TEST = transforms.Compose(
 	[
-		transforms_hyp.Rescale(32),
+		transforms_hyp.Rescale(IMG_SIZE),
 		transforms.ToTensor(),
 	]
 )

@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from configs import configs
 
 import numpy as np
 import torch
@@ -164,7 +165,7 @@ class SpectralAttentionBlock(nn.Module):
 class ConvNet(BaseModel):
     def __init__(
         self,
-        layers=[3, 4, 6, 3],
+        layers=configs.LAYERS,
         img_channels=373,  # number of spectral bands
         res_channels=64,
         num_classes=1,
