@@ -2,6 +2,7 @@ import tempfile
 from abc import abstractmethod
 from pathlib import Path
 
+import keyboard
 import mlflow
 import numpy as np
 import torch
@@ -47,6 +48,7 @@ class BaseTrainer:
                 self.early_stop = inf
 
         self.start_epoch = 1
+        self.stop_flag = False
         self.checkpoints_dir, self.save_dir = None, None
 
         # setup visualization writer instance
@@ -71,7 +73,7 @@ class BaseTrainer:
         self.save_dir = self._set_save_dir()
         self.checkpoints_dir = ensure_dir(self.save_dir / "artifacts/checkpoints")
         self._save_config()
-        
+
         not_improved_count = 0
         for epoch in range(self.start_epoch, self.epochs + 1):
             result = self._train_epoch(epoch)
@@ -117,6 +119,10 @@ class BaseTrainer:
                     )
                     break
 
+                if self.stop_flag:
+                    self.logger.info("Keyboard interrupt. Training stops.")
+                    break
+
             if epoch % self.save_period == 0:
                 self._save_checkpoint(epoch, save_best=best)
 
@@ -153,9 +159,7 @@ class BaseTrainer:
             "monitor_best": self.mnt_best,
             "config": self.config,
         }
-        filename = str(
-            self.checkpoints_dir / "checkpoint-epoch{}.pth".format(epoch)
-        )
+        filename = str(self.checkpoints_dir / "checkpoint-epoch{}.pth".format(epoch))
         torch.save(state, filename)
         self.logger.info("Saving checkpoint: {} ...".format(filename))
         if save_best:
@@ -276,6 +280,10 @@ class Trainer(BaseTrainer):
 
             if batch_idx == self.len_epoch:
                 break
+            if keyboard.is_pressed("e"):
+                self.logger.info("You pressed <e> to exit training.")
+                self.stop_flag = True
+
         log = self.train_metrics.result()
 
         if self.do_validation:

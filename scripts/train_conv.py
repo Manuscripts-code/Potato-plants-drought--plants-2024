@@ -73,6 +73,7 @@ def train_conv(config):
     mlflow.set_experiment(experiment_name=f"train_{config.exper_name}")
     with mlflow.start_run(run_name=f"{config.run_id}__train"):
         trainer.train()
+        return mlflow.active_run().info.run_id
 
 
 if __name__ == "__main__":
