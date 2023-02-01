@@ -24,26 +24,28 @@ CASHED_IMAGES_DIR = "./data"
 USE_CASHED_IMAGES = True
 SAVE_CASHED_IMAGES = True
 NOISY_BANDS = np.concatenate(
-    [np.arange(26), np.arange(140, 171), np.arange(430, 448)]
+	[np.arange(26), np.arange(140, 171), np.arange(430, 448)]
 )  # hardcoded bands to remove
 GROUPS = {
-    # groupes by labels
-    "KK-K": "KIS_krka_control",
-    "KK-S": "KIS_krka_drought",
-    "KS-K": "KIS_savinja_control",
-    "KS-S": "KIS_savinja_drought",
+	# groupes by labels
+	"KK-K": "KIS_krka_control",
+	"KK-S": "KIS_krka_drought",
+	"KS-K": "KIS_savinja_control",
+	"KS-S": "KIS_savinja_drought",
 }
 TRANSFORM_TRAIN = transforms.Compose(
-    [
-        transforms_hyp.RandomMirror(),
-        transforms.ToTensor(),
-    ]
+	[
+		transforms_hyp.RandomMirror(),
+		transforms_hyp.RandomCrop(32),
+		transforms.ToTensor(),
+	]
 )
 TRANSFORM_TEST = transforms.Compose(
-    [
-        transforms.ToTensor(),
-    ]
+	[
+		transforms_hyp.Rescale(32),
+		transforms.ToTensor(),
+	]
 )
 # transform_during_loading = transforms.Compose([AreaNormalization()])
-TRANSFORM_DURING_LOADING = transforms.Compose([transforms_hyp.SavgolTransform(11)])
-# TRANSFORM_DURING_LOADING = transforms.Compose([transforms_hyp.NoTransformation()])
+# TRANSFORM_DURING_LOADING = transforms.Compose([transforms_hyp.SavgolTransform(11)])
+TRANSFORM_DURING_LOADING = transforms.Compose([transforms_hyp.NoTransformation()])

@@ -164,7 +164,7 @@ class SpectralAttentionBlock(nn.Module):
 class ConvNet(BaseModel):
     def __init__(
         self,
-        layers=[1, 1, 1, 1],
+        layers=[3, 4, 6, 3],
         img_channels=373,  # number of spectral bands
         res_channels=64,
         num_classes=1,
@@ -251,11 +251,12 @@ class ConvNet(BaseModel):
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
-            elif isinstance(m, SpectralAttentionBlock):
-                nn.init.constant_(m.fc1.weight, 1)
-                nn.init.constant_(m.fc1.bias, 1)
-                nn.init.constant_(m.fc2.weight, 1)
-                nn.init.constant_(m.fc2.bias, 1)
+                # TODO
+            # elif isinstance(m, SpectralAttentionBlock):
+            #     nn.init.constant_(m.fc1.weight, 1)
+            #     nn.init.constant_(m.fc1.bias, 0)
+            #     nn.init.constant_(m.fc2.weight, 1)
+            #     nn.init.constant_(m.fc2.bias, 0)
 
         if zero_init_residual:
             for m in self.modules():
