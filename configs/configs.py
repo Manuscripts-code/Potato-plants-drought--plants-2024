@@ -27,7 +27,6 @@ NOISY_BANDS = np.concatenate(
 	[np.arange(26), np.arange(140, 171), np.arange(430, 448)]
 )  # hardcoded bands to remove
 IMG_SIZE = 50
-LAYERS = [2, 2, 2, 2]
 GROUPS = {
 	# groupes by labels
 	"KK-K": "KIS_krka_control",

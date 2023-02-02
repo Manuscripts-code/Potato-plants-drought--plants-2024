@@ -3,7 +3,10 @@
     "n_gpu": 1,
     "arch": {
         "type": "ConvNet",
-        "args": {}
+        "args": {
+            "layers": [2, 2, 2, 2],
+            "img_channels": 373
+        }
     },
     "data_loader": {
         "type": "HypDataLoader",

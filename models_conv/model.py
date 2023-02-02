@@ -165,8 +165,8 @@ class SpectralAttentionBlock(nn.Module):
 class ConvNet(BaseModel):
     def __init__(
         self,
-        layers=configs.LAYERS,
-        img_channels=373,  # number of spectral bands
+        layers,
+        img_channels,  # number of spectral bands
         res_channels=64,
         num_classes=1,
         zero_init_residual=False,
