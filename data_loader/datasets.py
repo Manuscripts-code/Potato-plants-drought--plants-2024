@@ -22,8 +22,9 @@ class PlantsDataset(Dataset):
 
         self.label_encoder = LabelEncoder()
 
-        self.data_dir, self.use_cashed_images = self._get_data_dir(data_dir)
-        images, labels, classes = self._read_data()
+        data_dir, self.use_cashed_images = self._get_data_dir(data_dir)
+        images_paths = self._get_images_paths(data_dir)
+        images, labels, classes = self._read_data(images_paths)
         # get data based on whether it is training or testing run
         self.images, classes = data_sampler(images, labels, classes)
         self.classes = self.label_encoder.fit_transform(classes)
@@ -35,12 +36,21 @@ class PlantsDataset(Dataset):
                 return data_cashed_dir, True
         return data_dir, False
 
-    def _read_data(self):
-        images_paths = sorted(glob.glob(str(Path(self.data_dir) / "*.hdr")))
+    def _get_images_paths(self, data_dir):
+        if not isinstance(data_dir, list):
+            data_dir = [data_dir]
 
+        images_paths = []
+        for data_dir_ in data_dir:
+            images_paths += sorted(glob.glob(str(Path(data_dir_) / "*.hdr")))
+
+        return images_paths
+
+    def _read_data(self, images_paths):
         images = []
         classes = []
         labels = []
+
         for path in track(images_paths, description="Loading images..."):
             image = SPImage(sp.envi.open(path))
             image_arr = self._prepare_image_arr(image)
