@@ -253,11 +253,11 @@ class ConvNet(BaseModel):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
                 # TODO
-            # elif isinstance(m, SpectralAttentionBlock):
-            #     nn.init.constant_(m.fc1.weight, 1)
-            #     nn.init.constant_(m.fc1.bias, 0)
-            #     nn.init.constant_(m.fc2.weight, 1)
-            #     nn.init.constant_(m.fc2.bias, 0)
+            elif isinstance(m, SpectralAttentionBlock):
+                nn.init.constant_(m.fc1.weight, 0.1)
+                nn.init.constant_(m.fc1.bias, 0)
+                nn.init.constant_(m.fc2.weight, 0.1)
+                nn.init.constant_(m.fc2.bias, 0)
 
         if zero_init_residual:
             for m in self.modules():
