@@ -47,6 +47,4 @@ TRANSFORM_TEST = transforms.Compose(
 		transforms.ToTensor(),
 	]
 )
-# transform_during_loading = transforms.Compose([AreaNormalization()])
-# TRANSFORM_DURING_LOADING = transforms.Compose([transforms_hyp.SavgolTransform(11)])
 TRANSFORM_DURING_LOADING = transforms.Compose([transforms_hyp.NoTransformation()])
