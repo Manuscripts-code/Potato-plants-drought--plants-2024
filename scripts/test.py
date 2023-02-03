@@ -9,16 +9,16 @@ from rich.progress import track
 from sklearn.metrics import classification_report
 
 import data_loader.data_loaders as module_data
-import models_conv.loss as module_loss
-import models_conv.metric as module_metric
-import models_conv.model as module_arch
+import model.loss as module_loss
+import model.metric as module_metric
+import model.model as module_arch
 from configs import configs
 from utils.parse_config import ParseConfig
 from utils.tools import calculate_classification_metrics
 from utils.utils import ensure_dir, write_json, write_txt
 
 
-def test_conv(config):
+def test(config):
     logger = config.get_logger("test")
     logger.info("Loading checkpoint: {} ...".format(config.resume))
 
