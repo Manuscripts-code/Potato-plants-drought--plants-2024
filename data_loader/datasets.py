@@ -69,6 +69,8 @@ class PlantsDataset(Dataset):
         if self.use_cashed_images:
             return image_arr
 
+        # replace nans with zeros
+        image_arr = np.nan_to_num(image_arr)
         # clip between 0 and 1
         image_arr = image_arr.clip(0, 1)
         # transform by transformations defined during loading

@@ -19,7 +19,13 @@ mlflow.set_tracking_uri(TRACKING_URI)
 
 
 ### Data loading ###
-DATA_DIR = "E:\\janez\\data\\sliced_converted_images\\slikanje_2022_rad_4"
+DATA_DIR = [
+	"E:\\janez\\data\\sliced_converted_images\\slikanje_2022_rad_1",
+	"E:\\janez\\data\\sliced_converted_images\\slikanje_2022_rad_2",
+	"E:\\janez\\data\\sliced_converted_images\\slikanje_2022_rad_3",
+	"E:\\janez\\data\\sliced_converted_images\\slikanje_2022_rad_4",
+	"E:\\janez\\data\\sliced_converted_images\\slikanje_2022_rad_5"
+]
 CASHED_IMAGES_DIR = "./data"
 USE_CASHED_IMAGES = True
 SAVE_CASHED_IMAGES = True

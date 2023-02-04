@@ -65,8 +65,6 @@ def test(config):
     pred_list = []
     with torch.no_grad():
         for i, (data, target) in enumerate(track(data_loader, description="Loading data...")):
-            # replace nans with zeros
-            data = torch.nan_to_num(data)
             # convert to column vector
             target = target.view(len(target), -1).float()
             data, target = data.to(device), target.to(device)

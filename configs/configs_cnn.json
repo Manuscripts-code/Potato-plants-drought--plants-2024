@@ -17,7 +17,7 @@
             "shuffle": true,
             "train_test_split_size": 0.2,
             "train_valid_split_size": 0.2,
-            "num_workers": 4
+            "num_workers": 2
         }
     },
     "optimizer": {
