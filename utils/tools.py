@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.signal import find_peaks
 from sklearn.metrics import precision_recall_fscore_support
 
 
@@ -37,3 +38,10 @@ def calculate_classification_metrics(y_true, y_pred, classes=None):
         }
 
     return metrics
+
+
+def find_signal_peaks(vips):
+    peak_indexes, properties = find_peaks(x=vips, height=1.5, distance=20)
+    peak_heights = properties["peak_heights"]
+    peak_heights_dict = {key: value for (key, value) in zip(peak_indexes, peak_heights)}
+    return peak_heights_dict, peak_indexes
