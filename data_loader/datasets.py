@@ -85,7 +85,7 @@ class PlantsDataset(Dataset):
 
         if configs.SAVE_CASHED_IMAGES:
             save_image(
-                configs.CASHED_IMAGES_DIR + "/" + image.filename + ".hdr",
+                configs.CASHED_IMAGES_DIR / (image.filename + ".hdr"),
                 image_arr,
                 metadata=image.metadata,
             )
