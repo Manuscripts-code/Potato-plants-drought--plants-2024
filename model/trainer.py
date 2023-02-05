@@ -255,7 +255,7 @@ class Trainer(BaseTrainer):
         """
         self.model.train()
         self.train_metrics.reset()
-        for batch_idx, (data, target) in enumerate(self.data_loader):
+        for batch_idx, (data, target, _) in enumerate(self.data_loader):
             # convert to column vector
             target = target.view(len(target), -1).float()
             data, target = data.to(self.device), target.to(self.device)
@@ -304,7 +304,7 @@ class Trainer(BaseTrainer):
         self.model.eval()
         self.valid_metrics.reset()
         with torch.no_grad():
-            for batch_idx, (data, target) in enumerate(self.valid_data_loader):
+            for batch_idx, (data, target, _) in enumerate(self.valid_data_loader):
                 # convert to column vector
                 target = target.view(len(target), -1).float()
                 data, target = data.to(self.device), target.to(self.device)

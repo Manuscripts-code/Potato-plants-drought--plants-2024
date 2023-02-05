@@ -64,7 +64,7 @@ def test(config):
     target_list = []
     pred_list = []
     with torch.no_grad():
-        for i, (data, target) in enumerate(track(data_loader, description="Loading data...")):
+        for i, (data, target, _) in enumerate(track(data_loader, description="Loading data...")):
             # convert to column vector
             target = target.view(len(target), -1).float()
             data, target = data.to(device), target.to(device)

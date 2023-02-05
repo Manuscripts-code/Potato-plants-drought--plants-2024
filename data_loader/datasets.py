@@ -24,10 +24,12 @@ class PlantsDataset(Dataset):
 
         data_dir, self.use_cashed_images = self._get_data_dir(data_dir)
         images_paths = self._get_images_paths(data_dir)
-        images, labels, classes = self._read_data(images_paths)
+        images, labels, classes, imagings = self._read_data(images_paths)
         # get data based on whether it is training or testing run
-        self.images, classes = data_sampler(images, labels, classes)
-        self.classes = self.label_encoder.fit_transform(classes)
+        self.images, self.labels, self.classes, self.imagings = data_sampler(
+            images, labels, classes, imagings
+        )
+        self.classes = self.label_encoder.fit_transform(self.classes)
 
     def _get_data_dir(self, data_dir):
         if configs.USE_CASHED_IMAGES and configs.CASHED_IMAGES_DIR:
@@ -50,18 +52,21 @@ class PlantsDataset(Dataset):
         images = []
         classes = []
         labels = []
+        imagings = []
 
         for path in track(images_paths, description="Loading images..."):
             image = SPImage(sp.envi.open(path))
             image_arr = self._prepare_image_arr(image)
             image_label = image.label
+            imaging_label = self._extract_imaging_label(image.filename)
             image_group = self._map_label_to_group(image_label)
 
             images.append(image_arr)
             labels.append(image_label)
             classes.append(image_group)
+            imagings.append(imaging_label)
 
-        return np.array(images), np.array(labels), np.array(classes)
+        return np.array(images), np.array(labels), np.array(classes), np.array(imagings)
 
     def _prepare_image_arr(self, image):
         # convert image to array
@@ -88,6 +93,10 @@ class PlantsDataset(Dataset):
         return image_arr
 
     @staticmethod
+    def _extract_imaging_label(filename):
+        return filename.split("__")[-1].split("_")[0]
+
+    @staticmethod
     def _map_label_to_group(label):
         # remove number from label
         label = "-".join(label.split("-")[:2])
@@ -106,6 +115,6 @@ class PlantsDataset(Dataset):
         else:
             transform = self.transform_test
 
-        img = transform(self.images[idx])
+        image = transform(self.images[idx])
         target = self.classes[idx]
-        return (img, target)
+        return (image, target, {"label": self.labels[idx], "imaging": self.imagings[idx]})

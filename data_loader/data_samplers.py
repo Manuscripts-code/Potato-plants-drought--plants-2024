@@ -11,17 +11,27 @@ class Sampler(Protocol):
     train_test_split_size: float
 
     def __call__(
-        self, images: np.ndarray, labels: np.ndarray, classes: np.ndarray
+        self, images: np.ndarray, labels: np.ndarray, classes: np.ndarray, imagings: np.ndarray
     ) -> tuple[np.ndarray, np.ndarray]:
         ...
 
-    def sample(self, images, classes, train_index, test_index):
+    def sample(self, images, labels, classes, imagings, train_index, test_index):
         if self.training:
-            images, classes = images[train_index], classes[train_index]
+            images, labels, classes, imagings = (
+                images[train_index],
+                labels[train_index],
+                classes[train_index],
+                imagings[train_index],
+            )
         else:
-            images, classes = images[test_index], classes[test_index]
-        images, classes = shuffle(images, classes, random_state=0)
-        return images, classes
+            images, labels, classes, imagings = (
+                images[test_index],
+                labels[test_index],
+                classes[test_index],
+                imagings[test_index],
+            )
+        images, labels, classes, imagings = shuffle(images, labels, classes, imagings, random_state=0)
+        return images, labels, classes, imagings
 
 
 class RandomSampler(Sampler):
@@ -29,7 +39,7 @@ class RandomSampler(Sampler):
         self.training = training
         self.train_test_split_size = train_test_split_size
 
-    def __call__(self, images, labels, classes):
+    def __call__(self, images, labels, classes, imagings):
         idx_full = np.arange(len(images))
 
         np.random.seed(0)
@@ -40,7 +50,7 @@ class RandomSampler(Sampler):
 
         test_index = idx_full[0:len_test]
         train_index = np.delete(idx_full, np.arange(0, len_test))
-        return self.sample(images, classes, train_index, test_index)
+        return self.sample(images, labels, classes, imagings, train_index, test_index)
 
 
 class StratifySampler(Sampler):
@@ -48,7 +58,7 @@ class StratifySampler(Sampler):
         self.training = training
         self.train_test_split_size = train_test_split_size
 
-    def __call__(self, images, labels, classes):
+    def __call__(self, images, labels, classes, imagings):
         idx_full = np.arange(len(images))
 
         # note: train_test_split returns list containing train-test split of inputs.
@@ -59,7 +69,7 @@ class StratifySampler(Sampler):
             random_state=0,
             shuffle=True,
         )
-        return self.sample(images, classes, train_index, test_index)
+        return self.sample(images, labels, classes, imagings, train_index, test_index)
 
 
 class GroupSampler(Sampler):
@@ -67,14 +77,14 @@ class GroupSampler(Sampler):
         self.training = training
         self.train_test_split_size = train_test_split_size
 
-    def __call__(self, images, labels, classes):
+    def __call__(self, images, labels, classes, imagings):
         idx_full = np.arange(len(images))
 
         # note: GroupShuffleSplit generate indices to split data into training and test set.
         splitter = GroupShuffleSplit(test_size=self.train_test_split_size, n_splits=2, random_state=0)
         split = splitter.split(idx_full, groups=labels)
         train_index, test_index = next(split)
-        return self.sample(images, classes, train_index, test_index)
+        return self.sample(images, labels, classes, imagings, train_index, test_index)
 
 
 class ManualGroupSamplerKrka(Sampler):
@@ -82,12 +92,12 @@ class ManualGroupSamplerKrka(Sampler):
         self.training = training
         self.train_test_split_size = train_test_split_size
 
-    def __call__(self, images, labels, classes):
+    def __call__(self, images, labels, classes, imagings):
         labels_unique = np.unique(labels)
 
         # generate list by labels of treatment
-        K_list_unique = [label for label in labels_unique if label.split("-")[:2] == ['KK', 'K']]
-        S_list_unique = [label for label in labels_unique if label.split("-")[:2] == ['KK', 'S']]
+        K_list_unique = [label for label in labels_unique if label.split("-")[:2] == ["KK", "K"]]
+        S_list_unique = [label for label in labels_unique if label.split("-")[:2] == ["KK", "S"]]
 
         # remove because it has small number of samples, and to have same K and S
         K_list_unique.remove("KK-K-09")
@@ -119,7 +129,7 @@ class ManualGroupSamplerKrka(Sampler):
         train_index = self.stratify_classes(classes, train_index)
         test_index = self.stratify_classes(classes, test_index)
 
-        return self.sample(images, classes, train_index, test_index)
+        return self.sample(images, labels, classes, imagings, train_index, test_index)
 
     @staticmethod
     def stratify_classes(classes, set_indices):
@@ -136,4 +146,3 @@ class ManualGroupSamplerKrka(Sampler):
             indices = random.sample(indices.tolist(), samples_min)
             class_indices.append(indices)
         return np.sort(set_indices[np.concatenate(class_indices)])
-

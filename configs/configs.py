@@ -26,7 +26,7 @@ DATA_DIR = [
 	"E:\\janez\\data\\sliced_converted_images\\slikanje_2022_rad_4",
 	"E:\\janez\\data\\sliced_converted_images\\slikanje_2022_rad_5"
 ]
-CASHED_IMAGES_DIR = "./data"
+CASHED_IMAGES_DIR = BASE_DIR / "data"
 USE_CASHED_IMAGES = True
 SAVE_CASHED_IMAGES = True
 NOISY_BANDS = np.concatenate(
