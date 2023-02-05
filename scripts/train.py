@@ -74,37 +74,3 @@ def train(config):
     with mlflow.start_run(run_name=f"{config.run_id}__train"):
         trainer.train()
         return mlflow.active_run().info.run_id
-
-
-if __name__ == "__main__":
-    args = argparse.ArgumentParser(description="Train convolutional model")
-    args.add_argument(
-        "-c",
-        "--config",
-        default=None,
-        type=str,
-        help="config file path (default: None)",
-    )
-    args.add_argument(
-        "-r",
-        "--resume",
-        default=None,
-        type=str,
-        help="path to latest checkpoint (default: None)",
-    )
-    args.add_argument(
-        "-d",
-        "--device",
-        default=None,
-        type=str,
-        help="indices of GPUs to enable (default: all)",
-    )
-
-    # custom cli options to modify configuration from default values given in json file.
-    CustomArgs = collections.namedtuple("CustomArgs", "flags type target")
-    options = [
-        CustomArgs(["--lr", "--learning_rate"], type=float, target="optimizer;args;lr"),
-        CustomArgs(["--bs", "--batch_size"], type=int, target="data_loader;args;batch_size"),
-    ]
-    config = ParseConfig.from_args(args, options)
-    train_conv(config)

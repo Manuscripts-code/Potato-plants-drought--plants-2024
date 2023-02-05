@@ -104,31 +104,3 @@ def test(config):
             write_json(config.config, Path(dp, "configs/config.json"))
             write_txt(config.resume.name, Path(dp, "configs/train_runID.txt"))
             mlflow.log_artifacts(dp)
-
-
-if __name__ == "__main__":
-    args = argparse.ArgumentParser(description="Test convolutional model")
-    args.add_argument(
-        "-c",
-        "--config",
-        default=None,
-        type=str,
-        help="config file path (default: None)",
-    )
-    args.add_argument(
-        "-r",
-        "--resume",
-        default=None,
-        type=str,
-        help="path to latest checkpoint (default: None)",
-    )
-    args.add_argument(
-        "-d",
-        "--device",
-        default=None,
-        type=str,
-        help="indices of GPUs to enable (default: all)",
-    )
-
-    config = ParseConfig.from_args(args)
-    test_conv(config)
