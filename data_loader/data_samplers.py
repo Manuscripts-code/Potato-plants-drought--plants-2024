@@ -125,23 +125,31 @@ class ManualGroupSamplerKrka(Sampler):
         train_index = np.concatenate((train_idx_K, train_idx_S))
         test_index = np.concatenate((test_idx_K, test_idx_S))
 
+        # stratify by imagings train and test indices
+        train_index = self.stratify_array(imagings, train_index)
+        test_index = self.stratify_array(imagings, test_index)
+
         # stratify by classes train and test indices
-        train_index = self.stratify_classes(classes, train_index)
-        test_index = self.stratify_classes(classes, test_index)
+        train_index = self.stratify_array(classes, train_index)
+        test_index = self.stratify_array(classes, test_index)
+
+        ## check the distribution, e.g. for imagings
+        # unique, counts = np.unique(imagings[test_index], return_counts=True)
+        # print(dict(zip(unique, counts)))
 
         return self.sample(images, labels, classes, imagings, train_index, test_index)
 
     @staticmethod
-    def stratify_classes(classes, set_indices):
+    def stratify_array(in_array, set_indices):
         random.seed(0)
         # display unique classes and calculate number of samples per each classes
-        unique_classes, samples_per_class = np.unique(classes[set_indices], return_counts=True)
+        unique_classes, samples_per_class = np.unique(in_array[set_indices], return_counts=True)
         # min samples
         samples_min = samples_per_class.min()
 
         class_indices = []
         for cls_ in unique_classes:
-            indices = np.where(classes[set_indices] == cls_)[0]
+            indices = np.where(in_array[set_indices] == cls_)[0]
             # under-sample without replacement
             indices = random.sample(indices.tolist(), samples_min)
             class_indices.append(indices)
