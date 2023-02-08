@@ -42,7 +42,7 @@ def calculate_classification_metrics(y_true, y_pred, classes=None):
 
 
 def find_signal_peaks(signal):
-    peak_indexes, properties = find_peaks(x=signal, height=1, distance=20)
+    peak_indexes, properties = find_peaks(x=signal, height=0.5, distance=20)
     peak_heights = properties["peak_heights"]
     peak_heights_dict = {key: value for (key, value) in zip(peak_indexes, peak_heights)}
     return peak_heights_dict, peak_indexes

@@ -57,7 +57,7 @@ TRANSFORM_DURING_LOADING = transforms.Compose([transforms_hyp.NoTransformation()
 
 
 ### Visualization ###
-_BANDS = [
+BANDS_ORIGINAL = [
     409.759827,
     413.398185,
     417.036543,
@@ -507,4 +507,4 @@ _BANDS = [
     2504.119122,
     2509.552726,
 ]
-BANDS = np.delete(_BANDS, NOISY_BANDS)
+BANDS = np.delete(BANDS_ORIGINAL, NOISY_BANDS)
