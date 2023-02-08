@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.signal import find_peaks
 from scipy.stats import bootstrap
-from sklearn.metrics import precision_recall_fscore_support
+from sklearn.metrics import auc, precision_recall_fscore_support, roc_curve
 
 
 def calculate_classification_metrics(y_true, y_pred, classes=None):
@@ -67,3 +67,26 @@ def calculate_metric_and_confidence_interval(data_df, metric):
     mean = metric(*data)
     ci = calculate_confidence_interval(data, statistic=metric)
     return mean, ci
+
+
+def calculate_roc_curve(data_df):
+    tprs = []
+    mean_fpr = np.linspace(0, 1, 100)
+    # bootstrapping used to get more smooth curve
+    for s in range(1000):
+        data_sampled = data_df.sample(n=len(data_df), replace=True, random_state=s)
+        sample_pro = data_sampled["prediction_proba"].to_numpy()
+        sample_label = data_sampled["target"].to_numpy()
+        fpr_rf, tpr_rf, _ = roc_curve(sample_label, sample_pro)
+        tprs.append(np.interp(mean_fpr, fpr_rf, tpr_rf))
+
+    mean_tpr = np.mean(tprs, axis=0)
+    mean_tpr[0] = 0.0
+    mean_tpr[-1] = 1.0
+    mean_auc = auc(mean_fpr, mean_tpr)
+
+    std_tpr = np.std(tprs, axis=0)
+    tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+    tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+
+    return mean_auc, mean_fpr, mean_tpr, tprs_upper, tprs_lower

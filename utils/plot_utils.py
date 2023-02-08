@@ -4,7 +4,7 @@ import numpy as np
 from matplotlib.collections import LineCollection
 
 from configs import configs
-from utils.tools import find_signal_peaks
+from utils.tools import calculate_roc_curve, find_signal_peaks
 
 
 def plot_relavant_features(relevances):
@@ -54,3 +54,40 @@ def plot_relevances_amplitudes(relevances):
     peak_heights_dict, peak_indexes = find_signal_peaks(y)
     [plt.text(x[idx], peak_heights_dict[idx], int(x[idx])) for idx in peak_indexes]
     # plt.axhline(y=1.5, color="r", linestyle="-")
+
+
+def plot_roc_curves(data_dfs):
+    if not isinstance(data_dfs, list):
+        data_dfs = [data_dfs]
+
+    cmap = plt.get_cmap("viridis")
+    no_colors = len(data_dfs)
+    colors = cmap(np.linspace(0, 1, no_colors))
+
+    fig, ax = plt.subplots(figsize=(8, 7), dpi=50)
+    ax.plot([0, 1], [0, 1], linestyle="--", lw=2, color="r", label="Chance (AUC=0.5)", alpha=0.9)
+    for idx, data_df in enumerate(data_dfs):
+        mean_auc, mean_fpr, mean_tpr, tprs_upper, tprs_lower = calculate_roc_curve(data_df)
+
+        ax.plot(
+            mean_fpr,
+            mean_tpr,
+            color=colors[idx],
+            label=f"data {idx} (AUC={mean_auc:.2f})",
+            lw=2,
+            alpha=0.9,
+        )
+        ax.fill_between(mean_fpr, tprs_lower, tprs_upper, color=colors[idx], alpha=0.5)
+
+    ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05])
+    plt.tick_params(labelsize=20)
+    plt.xlabel("1-Specificity", fontsize=20)
+    plt.ylabel("Sensitivity", fontsize=20)
+    ax.legend(loc="lower right", fontsize=17)
+    ax.spines["bottom"].set_linewidth(2)
+    ax.spines["left"].set_linewidth(2)
+    ax.spines["right"].set_linewidth(0)
+    ax.spines["top"].set_linewidth(0)
+    # plt.savefig("AUC.pdf", format="pdf")
+    plt.show()
+    plt.close()
