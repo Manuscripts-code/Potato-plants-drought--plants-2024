@@ -32,6 +32,7 @@ class PlantsDataset(Dataset):
         self.classes = self.label_encoder.fit_transform(self.classes)
 
     def _get_data_dir(self, data_dir):
+        data_dir = glob.glob(data_dir + "/*")
         if configs.USE_CASHED_IMAGES and configs.CASHED_IMAGES_DIR:
             data_cashed_dir = ensure_dir(configs.CASHED_IMAGES_DIR)
             if glob.glob(str(Path(configs.CASHED_IMAGES_DIR) / "*.hdr")):
@@ -61,10 +62,11 @@ class PlantsDataset(Dataset):
             imaging_label = self._extract_imaging_label(image.filename)
             image_group = self._map_label_to_group(image_label)
 
-            images.append(image_arr)
-            labels.append(image_label)
-            classes.append(image_group)
-            imagings.append(imaging_label)
+            if imaging_label in configs.IMAGINGS:
+                images.append(image_arr)
+                labels.append(image_label)
+                classes.append(image_group)
+                imagings.append(imaging_label)
 
         return np.array(images), np.array(labels), np.array(classes), np.array(imagings)
 
