@@ -14,7 +14,8 @@ from .sp_image import SPImage
 
 
 class PlantsDataset(Dataset):
-    def __init__(self, data_dir, data_sampler, training):
+    def __init__(self, data_dir, imagings_used, data_sampler, training):
+        self.imagings_used = imagings_used
         self.train = training
         self.transform_train = configs.TRANSFORM_TRAIN
         self.transform_test = configs.TRANSFORM_TEST
@@ -62,7 +63,7 @@ class PlantsDataset(Dataset):
             imaging_label = self._extract_imaging_label(image.filename)
             image_group = self._map_label_to_group(image_label)
 
-            if imaging_label in configs.IMAGINGS:
+            if imaging_label in self.imagings_used:
                 images.append(image_arr)
                 labels.append(image_label)
                 classes.append(image_group)

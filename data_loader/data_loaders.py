@@ -75,6 +75,7 @@ class HypDataLoader(BaseDataLoader):
     def __init__(
         self,
         data_dir,
+        imagings_used,
         dataset,
         data_sampler,
         batch_size,
@@ -90,6 +91,6 @@ class HypDataLoader(BaseDataLoader):
         )
         # init dataset which loads images by given sampler from datasets.py
         self.dataset = getattr(module_datasets, dataset)(
-            data_dir, data_sampler, training
+            data_dir, imagings_used, data_sampler, training
         )
         super().__init__(self.dataset, batch_size, shuffle, train_valid_split_size, num_workers)

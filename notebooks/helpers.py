@@ -25,6 +25,7 @@ def import_artifacts_from_runID(run_id):
 
     data_loader = getattr(module_data, config["data_loader"]["type"])(
         configs.DATA_DIR,
+        config["data_loader"]["args"]["imagings_used"],
         config["data_loader"]["args"]["dataset"],
         config["data_loader"]["args"]["data_sampler"],
         train_test_split_size=config["data_loader"]["args"]["train_test_split_size"],
