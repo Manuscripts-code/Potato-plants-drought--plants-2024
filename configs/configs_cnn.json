@@ -13,7 +13,7 @@
         "args": {
             "imagings_used": ["imaging-3", "imaging-4", "imaging-5"],
             "dataset": "PlantsDataset",
-            "data_sampler": "KrkaStratifySampler",
+            "data_sampler": "DumbSampler",
             "batch_size": 32,
             "shuffle": true,
             "train_test_split_size": 0.2,
@@ -42,7 +42,7 @@
         }
     },
     "trainer": {
-        "epochs": 2,
+        "epochs": 200,
         "save_period": 1,
         "verbosity": 2,
         "monitor": "min val_loss",

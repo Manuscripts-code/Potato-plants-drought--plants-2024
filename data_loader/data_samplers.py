@@ -34,6 +34,25 @@ class Sampler(Protocol):
         return images, labels, classes, imagings
 
 
+class DumbSampler(Sampler):
+    def __init__(self, training, train_test_split_size):
+        self.training = training
+        self.train_test_split_size = train_test_split_size
+
+    def __call__(self, images, labels, classes, imagings):
+        idx_full = np.arange(len(images))
+
+        np.random.seed(0)
+        np.random.shuffle(classes)
+
+        split = self.train_test_split_size
+        len_test = int(len(images) * split)
+
+        test_index = idx_full[0:len_test]
+        train_index = np.delete(idx_full, np.arange(0, len_test))
+        return self.sample(images, labels, classes, imagings, train_index, test_index)
+
+
 class RandomSampler(Sampler):
     def __init__(self, training, train_test_split_size):
         self.training = training
