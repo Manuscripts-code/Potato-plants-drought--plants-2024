@@ -12,7 +12,7 @@
         "type": "HypDataLoader",
         "args": {
             "dataset": "PlantsDataset",
-            "data_sampler": "ManualGroupSamplerKrka",
+            "data_sampler": "KrkaStratifySampler",
             "batch_size": 32,
             "shuffle": true,
             "train_test_split_size": 0.2,

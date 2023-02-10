@@ -20,7 +20,7 @@ mlflow.set_tracking_uri(TRACKING_URI)
 
 ### Data loading ###
 DATA_DIR = "C:\\Users\\janezla\\Documents\\DATA\\ana_converted\\imagings"
-IMAGINGS = ["ana-krompir-2-22", "ana-krompir-3-22", "ana-krompir-4-22", "ana-krompir-5-22"]
+IMAGINGS = ["imaging-3", "imaging-4", "imaging-5"]
 CASHED_IMAGES_DIR = BASE_DIR / "data"
 USE_CASHED_IMAGES = True
 SAVE_CASHED_IMAGES = True

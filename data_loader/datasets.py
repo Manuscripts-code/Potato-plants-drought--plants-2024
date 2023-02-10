@@ -96,7 +96,7 @@ class PlantsDataset(Dataset):
 
     @staticmethod
     def _extract_imaging_label(filename):
-        return filename.split("__")[-1].split("_")[0]
+        return filename.split("__")[2]
 
     @staticmethod
     def _map_label_to_group(label):

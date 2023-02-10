@@ -87,20 +87,27 @@ class GroupSampler(Sampler):
         return self.sample(images, labels, classes, imagings, train_index, test_index)
 
 
-class ManualGroupSamplerKrka(Sampler):
-    def __init__(self, training, train_test_split_size):
+class BaseStratifySampler(Sampler):
+    def __init__(self, training, train_test_split_size, variety_acronym, labels_to_remove):
         self.training = training
         self.train_test_split_size = train_test_split_size
+        self.variety_acronym = variety_acronym
+        self.labels_to_remove = labels_to_remove
 
     def __call__(self, images, labels, classes, imagings):
         labels_unique = np.unique(labels)
 
         # generate list by labels of treatment
-        K_list_unique = [label for label in labels_unique if label.split("-")[:2] == ["KK", "K"]]
-        S_list_unique = [label for label in labels_unique if label.split("-")[:2] == ["KK", "S"]]
+        K_list_unique = [
+            label for label in labels_unique if label.split("-")[:2] == [self.variety_acronym, "K"]
+        ]
+        S_list_unique = [
+            label for label in labels_unique if label.split("-")[:2] == [self.variety_acronym, "S"]
+        ]
 
-        # remove because it has small number of samples, and to have same K and S
-        K_list_unique.remove("KK-K-09")
+        # remove to balance datasets
+        K_list_unique = self.remove_list_items(K_list_unique, self.labels_to_remove["K"])
+        S_list_unique = self.remove_list_items(S_list_unique, self.labels_to_remove["S"])
 
         # indices where labels correspond to each K or S treatment
         labels_K_indices = np.array([idx for idx, label in enumerate(labels) if label in K_list_unique])
@@ -140,6 +147,12 @@ class ManualGroupSamplerKrka(Sampler):
         return self.sample(images, labels, classes, imagings, train_index, test_index)
 
     @staticmethod
+    def remove_list_items(in_list, to_remove):
+        if not isinstance(to_remove, list):
+            to_remove = [to_remove]
+        return [item for item in in_list if item not in to_remove]
+
+    @staticmethod
     def stratify_array(in_array, set_indices):
         random.seed(0)
         # display unique classes and calculate number of samples per each classes
@@ -154,3 +167,17 @@ class ManualGroupSamplerKrka(Sampler):
             indices = random.sample(indices.tolist(), samples_min)
             class_indices.append(indices)
         return np.sort(set_indices[np.concatenate(class_indices)])
+
+
+class KrkaStratifySampler(BaseStratifySampler):
+    def __init__(self, training, train_test_split_size):
+        variety_acronym = "KK"
+        labels_to_remove = {"K": "KK-K-09", "S": "KK-S-01"}
+        super().__init__(training, train_test_split_size, variety_acronym, labels_to_remove)
+
+
+class SavinjaStratifySampler(BaseStratifySampler):
+    def __init__(self, training, train_test_split_size):
+        variety_acronym = "KS"
+        labels_to_remove = {"K": "KS-K-15", "S": ["KS-S-04", "KS-S-12"]}
+        super().__init__(training, train_test_split_size, variety_acronym, labels_to_remove)
