@@ -114,14 +114,16 @@ class GroupSampler(Sampler):
 
 
 ####################################################################################################
+# Simple samplers do not take into consideration the labels of the images (non plant splits)
 
 
-class BaseDumbSampler(Sampler):
-    def __init__(self, training, train_test_split_size, variety_acronym, labels_to_remove):
+class BaseSimpleSampler(Sampler):
+    def __init__(self, training, train_test_split_size, variety_acronym, labels_to_remove, dumb):
         self.training = training
         self.train_test_split_size = train_test_split_size
         self.variety_acronym = variety_acronym
         self.labels_to_remove = labels_to_remove
+        self.dumb = dumb
 
     def __call__(self, images, labels, classes, imagings):
         labels_unique = np.unique(labels)
@@ -137,12 +139,13 @@ class BaseDumbSampler(Sampler):
         # remove to balance datasets
         K_list_unique = self.remove_list_items(K_list_unique, self.labels_to_remove["K"])
         S_list_unique = self.remove_list_items(S_list_unique, self.labels_to_remove["S"])
-        
+
         # indices where labels correspond to each K or S treatment
         labels_K_indices = np.array([idx for idx, label in enumerate(labels) if label in K_list_unique])
         labels_S_indices = np.array([idx for idx, label in enumerate(labels) if label in S_list_unique])
         indices = np.concatenate((labels_K_indices, labels_S_indices))
 
+        # split does not take in consideration the underlying labels
         train_index, test_index = train_test_split(
             indices,
             test_size=self.train_test_split_size,
@@ -150,10 +153,11 @@ class BaseDumbSampler(Sampler):
             shuffle=True,
         )
 
-        # mess up classes
-        classes_unique = np.unique(classes[indices])
-        np.random.seed(0)
-        classes = classes_unique[np.random.randint(0, len(classes_unique), (len(classes)))]
+        if self.dumb:
+            # mess up classes if dumb is enabled
+            classes_unique = np.unique(classes[indices])
+            np.random.seed(0)
+            classes = classes_unique[np.random.randint(0, len(classes_unique), (len(classes)))]
 
         # stratify by imagings train and test indices
         train_index = self.stratify_array(imagings, train_index)
@@ -162,25 +166,48 @@ class BaseDumbSampler(Sampler):
         # stratify by classes train and test indices
         train_index = self.stratify_array(classes, train_index)
         test_index = self.stratify_array(classes, test_index)
-        
+
         return self.sample(images, labels, classes, imagings, train_index, test_index)
 
 
-class KrkaDumbSampler(BaseDumbSampler):
+# Dumb sampler for testing purposes (classes are shuffled)
+class KrkaDumbSampler(BaseSimpleSampler):
     def __init__(self, training, train_test_split_size):
         variety_acronym = "KK"
         labels_to_remove = {"K": "KK-K-09", "S": "KK-S-01"}
-        super().__init__(training, train_test_split_size, variety_acronym, labels_to_remove)
-        
+        dumb = True
+        super().__init__(training, train_test_split_size, variety_acronym, labels_to_remove, dumb)
 
-class SavinjaDumbSampler(BaseDumbSampler):
+
+class SavinjaDumbSampler(BaseSimpleSampler):
     def __init__(self, training, train_test_split_size):
         variety_acronym = "KS"
         labels_to_remove = {"K": "KS-K-15", "S": ["KS-S-04", "KS-S-12"]}
-        super().__init__(training, train_test_split_size, variety_acronym, labels_to_remove)
+        dumb = True
+        super().__init__(training, train_test_split_size, variety_acronym, labels_to_remove, dumb)
+
+
+# Simple samplers which do not take into consideration the labels of the images
+# slices arbitrarily distributed into train and test sets
+class KrkaRandomSampler(BaseSimpleSampler):
+    def __init__(self, training, train_test_split_size):
+        variety_acronym = "KK"
+        labels_to_remove = {"K": "KK-K-09", "S": "KK-S-01"}
+        dumb = False
+        super().__init__(training, train_test_split_size, variety_acronym, labels_to_remove, dumb)
+
+
+class SavinjaRandomSampler(BaseSimpleSampler):
+    def __init__(self, training, train_test_split_size):
+        variety_acronym = "KS"
+        labels_to_remove = {"K": "KS-K-15", "S": ["KS-S-04", "KS-S-12"]}
+        dumb = False
+        super().__init__(training, train_test_split_size, variety_acronym, labels_to_remove, dumb)
 
 
 ####################################################################################################
+# Stratify samplers sample the data in correct way (plants train/test splits)
+# Stratification is done by labels, classes and imagings.
 
 
 class BaseStratifySampler(Sampler):
@@ -255,3 +282,62 @@ class SavinjaStratifySampler(BaseStratifySampler):
         variety_acronym = "KS"
         labels_to_remove = {"K": "KS-K-15", "S": ["KS-S-04", "KS-S-12"]}
         super().__init__(training, train_test_split_size, variety_acronym, labels_to_remove)
+
+
+####################################################################################################
+# Samplers with pre-defined biases
+
+
+# class BaseBiasedSampler(Sampler):
+#     def __init__(self, training, train_test_split_size, variety_acronym, labels_to_remove):
+#         self.training = training
+#         self.train_test_split_size = train_test_split_size
+#         self.variety_acronym = variety_acronym
+#         self.labels_to_remove = labels_to_remove
+
+#     def __call__(self, images, labels, classes, imagings):
+#         labels_unique = np.unique(labels)
+
+#         # generate list by labels of treatment
+#         K_list_unique = [
+#             label for label in labels_unique if label.split("-")[:2] == [self.variety_acronym, "K"]
+#         ]
+#         S_list_unique = [
+#             label for label in labels_unique if label.split("-")[:2] == [self.variety_acronym, "S"]
+#         ]
+
+#         # remove to balance datasets
+#         K_list_unique = self.remove_list_items(K_list_unique, self.labels_to_remove["K"])
+#         S_list_unique = self.remove_list_items(S_list_unique, self.labels_to_remove["S"])
+
+#         # indices where labels correspond to each K or S treatment
+#         labels_K_indices = np.array([idx for idx, label in enumerate(labels) if label in K_list_unique])
+#         labels_S_indices = np.array([idx for idx, label in enumerate(labels) if label in S_list_unique])
+
+#         # get labels for each treatment
+#         labels_K = labels[labels_K_indices]
+#         labels_S = labels[labels_S_indices]
+
+#         # split treatments separately
+#         splitter = GroupShuffleSplit(test_size=self.train_test_split_size, n_splits=2, random_state=0)
+#         # K
+#         split = splitter.split(labels_K_indices, groups=labels_K)
+#         train_idx, test_idx = next(split)
+#         train_idx_K, test_idx_K = labels_K_indices[train_idx], labels_K_indices[test_idx]
+#         # S
+#         split = splitter.split(labels_S_indices, groups=labels_S)
+#         train_idx, test_idx = next(split)
+#         train_idx_S, test_idx_S = labels_S_indices[train_idx], labels_S_indices[test_idx]
+
+#         # concatenate both
+#         train_index = np.concatenate((train_idx_K, train_idx_S))
+#         test_index = np.concatenate((test_idx_K, test_idx_S))
+        
+#         unique, counts = np.unique(imagings[test_index], return_counts=True)
+        
+#         class_indices = []
+#         for cls_ in unique_classes:
+#             indices = np.where(in_array[set_indices] == cls_)[0]
+#             # under-sample without replacement
+#             indices = random.sample(indices.tolist(), samples_min)
+#             class_indices.append(indices)
