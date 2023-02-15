@@ -105,6 +105,51 @@ class Sampler(Protocol):
 
         return np.sort(indices[np.concatenate(indices_resampled)])
 
+    @staticmethod
+    def separate_labels_by_treatment(labels, labels_to_remove, variety_acronym):
+        labels_unique = np.unique(labels)
+
+        # generate list by labels of treatment
+        K_list_unique = [
+            label for label in labels_unique if label.split("-")[:2] == [variety_acronym, "K"]
+        ]
+        S_list_unique = [
+            label for label in labels_unique if label.split("-")[:2] == [variety_acronym, "S"]
+        ]
+
+        # remove to balance datasets
+        K_list_unique = Sampler.remove_list_items(K_list_unique, labels_to_remove["K"])
+        S_list_unique = Sampler.remove_list_items(S_list_unique, labels_to_remove["S"])
+
+        # indices where labels correspond to each K or S treatment
+        labels_K_indices = np.array([idx for idx, label in enumerate(labels) if label in K_list_unique])
+        labels_S_indices = np.array([idx for idx, label in enumerate(labels) if label in S_list_unique])
+
+        return labels_K_indices, labels_S_indices
+
+    @staticmethod
+    def create_plant_test_split(labels, labels_K_indices, labels_S_indices, train_test_split_size):
+        # get labels for each treatment
+        labels_K = labels[labels_K_indices]
+        labels_S = labels[labels_S_indices]
+
+        # split treatments separately
+        splitter = GroupShuffleSplit(test_size=train_test_split_size, n_splits=2, random_state=0)
+        # K
+        split = splitter.split(labels_K_indices, groups=labels_K)
+        train_idx, test_idx = next(split)
+        train_idx_K, test_idx_K = labels_K_indices[train_idx], labels_K_indices[test_idx]
+        # S
+        split = splitter.split(labels_S_indices, groups=labels_S)
+        train_idx, test_idx = next(split)
+        train_idx_S, test_idx_S = labels_S_indices[train_idx], labels_S_indices[test_idx]
+
+        # concatenate both
+        train_index = np.concatenate((train_idx_K, train_idx_S))
+        test_index = np.concatenate((test_idx_K, test_idx_S))
+
+        return train_index, test_index
+
 
 ####################################################################################################
 # Examples of fundamental samplers (not used, just for showcase)
@@ -176,23 +221,10 @@ class BaseSimpleSampler(Sampler):
         self.dumb = dumb
 
     def __call__(self, images, labels, classes, imagings):
-        labels_unique = np.unique(labels)
+        labels_K_indices, labels_S_indices = self.separate_labels_by_treatment(
+            labels, self.labels_to_remove, self.variety_acronym
+        )
 
-        # generate list by labels of treatment
-        K_list_unique = [
-            label for label in labels_unique if label.split("-")[:2] == [self.variety_acronym, "K"]
-        ]
-        S_list_unique = [
-            label for label in labels_unique if label.split("-")[:2] == [self.variety_acronym, "S"]
-        ]
-
-        # remove to balance datasets
-        K_list_unique = self.remove_list_items(K_list_unique, self.labels_to_remove["K"])
-        S_list_unique = self.remove_list_items(S_list_unique, self.labels_to_remove["S"])
-
-        # indices where labels correspond to each K or S treatment
-        labels_K_indices = np.array([idx for idx, label in enumerate(labels) if label in K_list_unique])
-        labels_S_indices = np.array([idx for idx, label in enumerate(labels) if label in S_list_unique])
         indices = np.concatenate((labels_K_indices, labels_S_indices))
 
         # split does not take in consideration the underlying labels
@@ -271,42 +303,13 @@ class BaseStratifySampler(Sampler):
         self.distributions = distributions
 
     def __call__(self, images, labels, classes, imagings):
-        labels_unique = np.unique(labels)
+        labels_K_indices, labels_S_indices = self.separate_labels_by_treatment(
+            labels, self.labels_to_remove, self.variety_acronym
+        )
 
-        # generate list by labels of treatment
-        K_list_unique = [
-            label for label in labels_unique if label.split("-")[:2] == [self.variety_acronym, "K"]
-        ]
-        S_list_unique = [
-            label for label in labels_unique if label.split("-")[:2] == [self.variety_acronym, "S"]
-        ]
-
-        # remove to balance datasets
-        K_list_unique = self.remove_list_items(K_list_unique, self.labels_to_remove["K"])
-        S_list_unique = self.remove_list_items(S_list_unique, self.labels_to_remove["S"])
-
-        # indices where labels correspond to each K or S treatment
-        labels_K_indices = np.array([idx for idx, label in enumerate(labels) if label in K_list_unique])
-        labels_S_indices = np.array([idx for idx, label in enumerate(labels) if label in S_list_unique])
-
-        # get labels for each treatment
-        labels_K = labels[labels_K_indices]
-        labels_S = labels[labels_S_indices]
-
-        # split treatments separately
-        splitter = GroupShuffleSplit(test_size=self.train_test_split_size, n_splits=2, random_state=0)
-        # K
-        split = splitter.split(labels_K_indices, groups=labels_K)
-        train_idx, test_idx = next(split)
-        train_idx_K, test_idx_K = labels_K_indices[train_idx], labels_K_indices[test_idx]
-        # S
-        split = splitter.split(labels_S_indices, groups=labels_S)
-        train_idx, test_idx = next(split)
-        train_idx_S, test_idx_S = labels_S_indices[train_idx], labels_S_indices[test_idx]
-
-        # concatenate both
-        train_index = np.concatenate((train_idx_K, train_idx_S))
-        test_index = np.concatenate((test_idx_K, test_idx_S))
+        train_index, test_index = self.create_plant_test_split(
+            labels, labels_K_indices, labels_S_indices, self.train_test_split_size
+        )
 
         # stratify by imagings and classes for train and test indices
         train_index = self.resample_indices(
