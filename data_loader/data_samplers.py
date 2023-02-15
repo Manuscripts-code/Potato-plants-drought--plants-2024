@@ -288,56 +288,114 @@ class SavinjaStratifySampler(BaseStratifySampler):
 # Samplers with pre-defined biases
 
 
-# class BaseBiasedSampler(Sampler):
-#     def __init__(self, training, train_test_split_size, variety_acronym, labels_to_remove):
-#         self.training = training
-#         self.train_test_split_size = train_test_split_size
-#         self.variety_acronym = variety_acronym
-#         self.labels_to_remove = labels_to_remove
+class BaseBiasedSampler(Sampler):
+    def __init__(
+        self,
+        training,
+        train_test_split_size,
+        variety_acronym,
+        labels_to_remove,
+        imagings_bias=None,
+        classes_bias=None,
+    ):
+        self.training = training
+        self.train_test_split_size = train_test_split_size
+        self.variety_acronym = variety_acronym
+        self.labels_to_remove = labels_to_remove
+        self.imagings_bias = imagings_bias
+        self.classes_bias = classes_bias
 
-#     def __call__(self, images, labels, classes, imagings):
-#         labels_unique = np.unique(labels)
+    def __call__(self, images, labels, classes, imagings):
+        labels_unique = np.unique(labels)
 
-#         # generate list by labels of treatment
-#         K_list_unique = [
-#             label for label in labels_unique if label.split("-")[:2] == [self.variety_acronym, "K"]
-#         ]
-#         S_list_unique = [
-#             label for label in labels_unique if label.split("-")[:2] == [self.variety_acronym, "S"]
-#         ]
+        # generate list by labels of treatment
+        K_list_unique = [
+            label for label in labels_unique if label.split("-")[:2] == [self.variety_acronym, "K"]
+        ]
+        S_list_unique = [
+            label for label in labels_unique if label.split("-")[:2] == [self.variety_acronym, "S"]
+        ]
 
-#         # remove to balance datasets
-#         K_list_unique = self.remove_list_items(K_list_unique, self.labels_to_remove["K"])
-#         S_list_unique = self.remove_list_items(S_list_unique, self.labels_to_remove["S"])
+        # remove to balance datasets
+        K_list_unique = self.remove_list_items(K_list_unique, self.labels_to_remove["K"])
+        S_list_unique = self.remove_list_items(S_list_unique, self.labels_to_remove["S"])
 
-#         # indices where labels correspond to each K or S treatment
-#         labels_K_indices = np.array([idx for idx, label in enumerate(labels) if label in K_list_unique])
-#         labels_S_indices = np.array([idx for idx, label in enumerate(labels) if label in S_list_unique])
+        # indices where labels correspond to each K or S treatment
+        labels_K_indices = np.array([idx for idx, label in enumerate(labels) if label in K_list_unique])
+        labels_S_indices = np.array([idx for idx, label in enumerate(labels) if label in S_list_unique])
 
-#         # get labels for each treatment
-#         labels_K = labels[labels_K_indices]
-#         labels_S = labels[labels_S_indices]
+        # get labels for each treatment
+        labels_K = labels[labels_K_indices]
+        labels_S = labels[labels_S_indices]
 
-#         # split treatments separately
-#         splitter = GroupShuffleSplit(test_size=self.train_test_split_size, n_splits=2, random_state=0)
-#         # K
-#         split = splitter.split(labels_K_indices, groups=labels_K)
-#         train_idx, test_idx = next(split)
-#         train_idx_K, test_idx_K = labels_K_indices[train_idx], labels_K_indices[test_idx]
-#         # S
-#         split = splitter.split(labels_S_indices, groups=labels_S)
-#         train_idx, test_idx = next(split)
-#         train_idx_S, test_idx_S = labels_S_indices[train_idx], labels_S_indices[test_idx]
+        # split treatments separately
+        splitter = GroupShuffleSplit(test_size=self.train_test_split_size, n_splits=2, random_state=0)
+        # K
+        split = splitter.split(labels_K_indices, groups=labels_K)
+        train_idx, test_idx = next(split)
+        train_idx_K, test_idx_K = labels_K_indices[train_idx], labels_K_indices[test_idx]
+        # S
+        split = splitter.split(labels_S_indices, groups=labels_S)
+        train_idx, test_idx = next(split)
+        train_idx_S, test_idx_S = labels_S_indices[train_idx], labels_S_indices[test_idx]
 
-#         # concatenate both
-#         train_index = np.concatenate((train_idx_K, train_idx_S))
-#         test_index = np.concatenate((test_idx_K, test_idx_S))
+        # concatenate both
+        train_index = np.concatenate((train_idx_K, train_idx_S))
+        test_index = np.concatenate((test_idx_K, test_idx_S))
         
-#         unique, counts = np.unique(imagings[test_index], return_counts=True)
+        # create bias by imagings
+        train_index = self.bias_array(imagings, train_index, self.imagings_bias)
+        test_index = self.bias_array(imagings, test_index, self.imagings_bias)
         
-#         class_indices = []
-#         for cls_ in unique_classes:
-#             indices = np.where(in_array[set_indices] == cls_)[0]
-#             # under-sample without replacement
-#             indices = random.sample(indices.tolist(), samples_min)
-#             class_indices.append(indices)
+        # create bias by classes
+        train_index = self.bias_array(classes, train_index, self.classes_bias)
+        test_index = self.bias_array(classes, test_index, self.classes_bias)
+        # train_index = self.stratify_array(classes, train_index)
+        # test_index = self.stratify_array(classes, test_index)
+
+        return self.sample(images, labels, classes, imagings, train_index, test_index)
+
+    @staticmethod
+    def bias_array(in_array, set_indices, bias_dict):
+        random.seed(0)
+        # display unique classes and calculate number of samples per each classes
+        unique_classes, samples_classes = np.unique(in_array[set_indices], return_counts=True)
+        samples_per_class = dict(zip(unique_classes, samples_classes))
+
+        class_name_b, class_ratio_b = max(bias_dict.items())  # get for which class the most samples will be needed
+        samples_max_b = samples_per_class[class_name_b]
+
+        class_indices = []
+        for class_name, samples in samples_per_class.items():
+            indices = np.where(in_array[set_indices] == class_name)[0]
+            # under-sample without replacement
+            num_to_sample = int(samples_max_b * bias_dict[class_name]/class_ratio_b)
+            indices = random.sample(indices.tolist(), num_to_sample)
+            class_indices.append(indices)
+        return np.sort(set_indices[np.concatenate(class_indices)])
+
+
+class KrkaBiasedImagingsSampler(BaseBiasedSampler):
+    def __init__(self, training, train_test_split_size):
+        variety_acronym = "KK"
+        labels_to_remove = {"K": "KK-K-09", "S": "KK-S-01"}
+        imagings_bias = {
+            "imaging-1": 0.1,
+            "imaging-2": 0.1,
+            "imaging-3": 0.1,
+            "imaging-4": 0.1,
+            "imaging-5": 0.6,
+        }
+        classes_bias = {
+            "KIS_krka_control": 0.5,
+            "KIS_krka_drought": 0.5,
+        }
+
+        super().__init__(
+            training,
+            train_test_split_size,
+            variety_acronym,
+            labels_to_remove,
+            imagings_bias=imagings_bias,
+            classes_bias=classes_bias,
+        )
