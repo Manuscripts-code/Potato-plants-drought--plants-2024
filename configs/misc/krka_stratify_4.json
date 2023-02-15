@@ -1,0 +1,52 @@
+{
+    "name": "CNN",
+    "n_gpu": 1,
+    "arch": {
+        "type": "ConvNet",
+        "args": {
+            "layers": [2, 2, 2, 2],
+            "img_channels": 373
+        }
+    },
+    "data_loader": {
+        "type": "HypDataLoader",
+        "args": {
+            "imagings_used": ["imaging-4"],
+            "dataset": "PlantsDataset",
+            "data_sampler": "KrkaStratifySampler",
+            "batch_size": 32,
+            "shuffle": true,
+            "train_test_split_size": 0.2,
+            "train_valid_split_size": 0.2,
+            "num_workers": 2
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args": {
+            "lr": 0.001,
+            "weight_decay": 0.0005,
+            "amsgrad": true
+        }
+    },
+    "loss": "bce_loss",
+    "metrics": [
+        "accuracy",
+        "f1"
+    ],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 15,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "epochs": 200,
+        "save_period": 1,
+        "verbosity": 2,
+        "monitor": "min val_loss",
+        "early_stop": 50,
+        "tensorboard": false
+    }
+}
