@@ -1,4 +1,6 @@
+import itertools
 import random
+from collections import namedtuple
 from typing import Protocol
 
 import numpy as np
@@ -9,6 +11,7 @@ from sklearn.utils import shuffle
 class Sampler(Protocol):
     training: bool
     train_test_split_size: float
+    Distribution = namedtuple("Distribution", ["share_I", "share_C", "share_D"])
 
     def __call__(
         self, images: np.ndarray, labels: np.ndarray, classes: np.ndarray, imagings: np.ndarray
@@ -54,6 +57,53 @@ class Sampler(Protocol):
             indices = random.sample(indices.tolist(), samples_min)
             class_indices.append(indices)
         return np.sort(set_indices[np.concatenate(class_indices)])
+
+        # indc = train_index[np.where(imagings[test_index] == "imaging-3")[0]]
+        # unique, counts = np.unique(classes[indc], return_counts=True)
+        # print(dict(zip(unique, counts)))
+
+    @staticmethod
+    def _get_max_samples(imagings, classes, indices):
+        imagings_unique = np.unique(imagings[indices])
+
+        counts_all = []
+        for imaging in imagings_unique:
+            indices_imaging = indices[np.where(imagings[indices] == imaging)[0]]
+            _, counts = np.unique(classes[indices_imaging], return_counts=True)
+            counts_all.extend(counts)
+
+        return min(counts_all)
+
+    @staticmethod
+    def _apply_distribution(distributions, imaging, class_, samples_num_max):
+        if distributions is None:
+            return samples_num_max
+
+        distribution = distributions[imaging]
+        if class_.split("_")[-1] == "control":
+            share_class = distribution.share_C
+        else:
+            share_class = distribution.share_D
+
+        return int(samples_num_max * share_class * distribution.share_I)
+
+    @staticmethod
+    def resample_indices(imagings, classes, indices, distributions=None):
+        random.seed(0)
+        imagings_unique = np.unique(imagings[indices])
+        classes_unique = np.unique(classes[indices])
+
+        samples_num_max = Sampler._get_max_samples(imagings, classes, indices)
+
+        indices_resampled = []
+        for imaging, class_ in itertools.product(imagings_unique, classes_unique):
+            indices_sep = np.where((imagings[indices] == imaging) & (classes[indices] == class_))[0]
+            samples_num = Sampler._apply_distribution(distributions, imaging, class_, samples_num_max)
+            # under-sample without replacement
+            indices_sep = random.sample(indices_sep.tolist(), samples_num)
+            indices_resampled.append(indices_sep)
+
+        return np.sort(indices[np.concatenate(indices_resampled)])
 
 
 ####################################################################################################
@@ -211,11 +261,14 @@ class SavinjaRandomSampler(BaseSimpleSampler):
 
 
 class BaseStratifySampler(Sampler):
-    def __init__(self, training, train_test_split_size, variety_acronym, labels_to_remove):
+    def __init__(
+        self, training, train_test_split_size, variety_acronym, labels_to_remove, distributions
+    ):
         self.training = training
         self.train_test_split_size = train_test_split_size
         self.variety_acronym = variety_acronym
         self.labels_to_remove = labels_to_remove
+        self.distributions = distributions
 
     def __call__(self, images, labels, classes, imagings):
         labels_unique = np.unique(labels)
@@ -255,13 +308,13 @@ class BaseStratifySampler(Sampler):
         train_index = np.concatenate((train_idx_K, train_idx_S))
         test_index = np.concatenate((test_idx_K, test_idx_S))
 
-        # stratify by imagings train and test indices
-        train_index = self.stratify_array(imagings, train_index)
-        test_index = self.stratify_array(imagings, test_index)
-
-        # stratify by classes train and test indices
-        train_index = self.stratify_array(classes, train_index)
-        test_index = self.stratify_array(classes, test_index)
+        # stratify by imagings and classes for train and test indices
+        train_index = self.resample_indices(
+            imagings, classes, indices=train_index, distributions=self.distributions
+        )
+        test_index = self.resample_indices(
+            imagings, classes, indices=test_index, distributions=self.distributions
+        )
 
         ## check the distribution, e.g. for imagings
         # unique, counts = np.unique(imagings[test_index], return_counts=True)
@@ -274,7 +327,16 @@ class KrkaStratifySampler(BaseStratifySampler):
     def __init__(self, training, train_test_split_size):
         variety_acronym = "KK"
         labels_to_remove = {"K": "KK-K-09", "S": "KK-S-01"}
-        super().__init__(training, train_test_split_size, variety_acronym, labels_to_remove)
+        distributions = {
+            "imaging-1": self.Distribution(share_I=1, share_C=1, share_D=1),
+            "imaging-2": self.Distribution(share_I=1, share_C=1, share_D=1),
+            "imaging-3": self.Distribution(share_I=1, share_C=1, share_D=1),
+            "imaging-4": self.Distribution(share_I=1, share_C=1, share_D=1),
+            "imaging-5": self.Distribution(share_I=1, share_C=1, share_D=1),
+        }
+        super().__init__(
+            training, train_test_split_size, variety_acronym, labels_to_remove, distributions
+        )
 
 
 class SavinjaStratifySampler(BaseStratifySampler):
@@ -342,11 +404,11 @@ class BaseBiasedSampler(Sampler):
         # concatenate both
         train_index = np.concatenate((train_idx_K, train_idx_S))
         test_index = np.concatenate((test_idx_K, test_idx_S))
-        
+
         # create bias by imagings
         train_index = self.bias_array(imagings, train_index, self.imagings_bias)
         test_index = self.bias_array(imagings, test_index, self.imagings_bias)
-        
+
         # create bias by classes
         train_index = self.bias_array(classes, train_index, self.classes_bias)
         test_index = self.bias_array(classes, test_index, self.classes_bias)
@@ -362,14 +424,16 @@ class BaseBiasedSampler(Sampler):
         unique_classes, samples_classes = np.unique(in_array[set_indices], return_counts=True)
         samples_per_class = dict(zip(unique_classes, samples_classes))
 
-        class_name_b, class_ratio_b = max(bias_dict.items())  # get for which class the most samples will be needed
+        class_name_b, class_ratio_b = max(
+            bias_dict.items()
+        )  # get for which class the most samples will be needed
         samples_max_b = samples_per_class[class_name_b]
 
         class_indices = []
         for class_name, samples in samples_per_class.items():
             indices = np.where(in_array[set_indices] == class_name)[0]
             # under-sample without replacement
-            num_to_sample = int(samples_max_b * bias_dict[class_name]/class_ratio_b)
+            num_to_sample = int(samples_max_b * bias_dict[class_name] / class_ratio_b)
             indices = random.sample(indices.tolist(), num_to_sample)
             class_indices.append(indices)
         return np.sort(set_indices[np.concatenate(class_indices)])
