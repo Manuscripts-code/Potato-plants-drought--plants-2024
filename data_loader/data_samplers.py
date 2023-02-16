@@ -155,57 +155,57 @@ class Sampler(Protocol):
 # Examples of fundamental samplers (not used, just for showcase)
 
 
-class RandomSampler(Sampler):
-    def __init__(self, training, train_test_split_size):
-        self.training = training
-        self.train_test_split_size = train_test_split_size
+# class RandomSampler(Sampler):
+#     def __init__(self, training, train_test_split_size):
+#         self.training = training
+#         self.train_test_split_size = train_test_split_size
 
-    def __call__(self, images, labels, classes, imagings):
-        idx_full = np.arange(len(images))
+#     def __call__(self, images, labels, classes, imagings):
+#         idx_full = np.arange(len(images))
 
-        np.random.seed(0)
-        np.random.shuffle(idx_full)
+#         np.random.seed(0)
+#         np.random.shuffle(idx_full)
 
-        split = self.train_test_split_size
-        len_test = int(len(images) * split)
+#         split = self.train_test_split_size
+#         len_test = int(len(images) * split)
 
-        test_index = idx_full[0:len_test]
-        train_index = np.delete(idx_full, np.arange(0, len_test))
-        return self.sample(images, labels, classes, imagings, train_index, test_index)
-
-
-class StratifySampler(Sampler):
-    def __init__(self, training, train_test_split_size):
-        self.training = training
-        self.train_test_split_size = train_test_split_size
-
-    def __call__(self, images, labels, classes, imagings):
-        idx_full = np.arange(len(images))
-
-        # note: train_test_split returns list containing train-test split of inputs.
-        train_index, test_index = train_test_split(
-            idx_full,
-            test_size=self.train_test_split_size,
-            stratify=classes,
-            random_state=0,
-            shuffle=True,
-        )
-        return self.sample(images, labels, classes, imagings, train_index, test_index)
+#         test_index = idx_full[0:len_test]
+#         train_index = np.delete(idx_full, np.arange(0, len_test))
+#         return self.sample(images, labels, classes, imagings, train_index, test_index)
 
 
-class GroupSampler(Sampler):
-    def __init__(self, training, train_test_split_size):
-        self.training = training
-        self.train_test_split_size = train_test_split_size
+# class StratifySampler(Sampler):
+#     def __init__(self, training, train_test_split_size):
+#         self.training = training
+#         self.train_test_split_size = train_test_split_size
 
-    def __call__(self, images, labels, classes, imagings):
-        idx_full = np.arange(len(images))
+#     def __call__(self, images, labels, classes, imagings):
+#         idx_full = np.arange(len(images))
 
-        # note: GroupShuffleSplit generate indices to split data into training and test set.
-        splitter = GroupShuffleSplit(test_size=self.train_test_split_size, n_splits=2, random_state=0)
-        split = splitter.split(idx_full, groups=labels)
-        train_index, test_index = next(split)
-        return self.sample(images, labels, classes, imagings, train_index, test_index)
+#         # note: train_test_split returns list containing train-test split of inputs.
+#         train_index, test_index = train_test_split(
+#             idx_full,
+#             test_size=self.train_test_split_size,
+#             stratify=classes,
+#             random_state=0,
+#             shuffle=True,
+#         )
+#         return self.sample(images, labels, classes, imagings, train_index, test_index)
+
+
+# class GroupSampler(Sampler):
+#     def __init__(self, training, train_test_split_size):
+#         self.training = training
+#         self.train_test_split_size = train_test_split_size
+
+#     def __call__(self, images, labels, classes, imagings):
+#         idx_full = np.arange(len(images))
+
+#         # note: GroupShuffleSplit generate indices to split data into training and test set.
+#         splitter = GroupShuffleSplit(test_size=self.train_test_split_size, n_splits=2, random_state=0)
+#         split = splitter.split(idx_full, groups=labels)
+#         train_index, test_index = next(split)
+#         return self.sample(images, labels, classes, imagings, train_index, test_index)
 
 
 ####################################################################################################
@@ -224,7 +224,6 @@ class BaseSimpleSampler(Sampler):
         labels_K_indices, labels_S_indices = self.separate_labels_by_treatment(
             labels, self.labels_to_remove, self.variety_acronym
         )
-
         indices = np.concatenate((labels_K_indices, labels_S_indices))
 
         # split does not take in consideration the underlying labels
@@ -234,20 +233,15 @@ class BaseSimpleSampler(Sampler):
             random_state=0,
             shuffle=True,
         )
-
         if self.dumb:
             # mess up classes if dumb is enabled
             classes_unique = np.unique(classes[indices])
             np.random.seed(0)
             classes = classes_unique[np.random.randint(0, len(classes_unique), (len(classes)))]
 
-        # stratify by imagings train and test indices
-        train_index = self.stratify_array(imagings, train_index)
-        test_index = self.stratify_array(imagings, test_index)
-
-        # stratify by classes train and test indices
-        train_index = self.stratify_array(classes, train_index)
-        test_index = self.stratify_array(classes, test_index)
+        # stratify by imagings and classes for train and test indices
+        train_index = self.resample_indices(imagings, classes, indices=train_index)
+        test_index = self.resample_indices(imagings, classes, indices=test_index)
 
         return self.sample(images, labels, classes, imagings, train_index, test_index)
 
@@ -330,13 +324,7 @@ class KrkaStratifySampler(BaseStratifySampler):
     def __init__(self, training, train_test_split_size):
         variety_acronym = "KK"
         labels_to_remove = {"K": "KK-K-09", "S": "KK-S-01"}
-        distributions = {
-            "imaging-1": self.Distribution(share_I=1, share_C=1, share_D=1),
-            "imaging-2": self.Distribution(share_I=1, share_C=1, share_D=1),
-            "imaging-3": self.Distribution(share_I=1, share_C=1, share_D=1),
-            "imaging-4": self.Distribution(share_I=1, share_C=1, share_D=1),
-            "imaging-5": self.Distribution(share_I=1, share_C=1, share_D=1),
-        }
+        distributions = None
         super().__init__(
             training, train_test_split_size, variety_acronym, labels_to_remove, distributions
         )
@@ -346,123 +334,28 @@ class SavinjaStratifySampler(BaseStratifySampler):
     def __init__(self, training, train_test_split_size):
         variety_acronym = "KS"
         labels_to_remove = {"K": "KS-K-15", "S": ["KS-S-04", "KS-S-12"]}
-        super().__init__(training, train_test_split_size, variety_acronym, labels_to_remove)
+        distributions = None
+        super().__init__(
+            training, train_test_split_size, variety_acronym, labels_to_remove, distributions
+        )
 
 
 ####################################################################################################
 # Samplers with pre-defined biases
 
-
-class BaseBiasedSampler(Sampler):
-    def __init__(
-        self,
-        training,
-        train_test_split_size,
-        variety_acronym,
-        labels_to_remove,
-        imagings_bias=None,
-        classes_bias=None,
-    ):
-        self.training = training
-        self.train_test_split_size = train_test_split_size
-        self.variety_acronym = variety_acronym
-        self.labels_to_remove = labels_to_remove
-        self.imagings_bias = imagings_bias
-        self.classes_bias = classes_bias
-
-    def __call__(self, images, labels, classes, imagings):
-        labels_unique = np.unique(labels)
-
-        # generate list by labels of treatment
-        K_list_unique = [
-            label for label in labels_unique if label.split("-")[:2] == [self.variety_acronym, "K"]
-        ]
-        S_list_unique = [
-            label for label in labels_unique if label.split("-")[:2] == [self.variety_acronym, "S"]
-        ]
-
-        # remove to balance datasets
-        K_list_unique = self.remove_list_items(K_list_unique, self.labels_to_remove["K"])
-        S_list_unique = self.remove_list_items(S_list_unique, self.labels_to_remove["S"])
-
-        # indices where labels correspond to each K or S treatment
-        labels_K_indices = np.array([idx for idx, label in enumerate(labels) if label in K_list_unique])
-        labels_S_indices = np.array([idx for idx, label in enumerate(labels) if label in S_list_unique])
-
-        # get labels for each treatment
-        labels_K = labels[labels_K_indices]
-        labels_S = labels[labels_S_indices]
-
-        # split treatments separately
-        splitter = GroupShuffleSplit(test_size=self.train_test_split_size, n_splits=2, random_state=0)
-        # K
-        split = splitter.split(labels_K_indices, groups=labels_K)
-        train_idx, test_idx = next(split)
-        train_idx_K, test_idx_K = labels_K_indices[train_idx], labels_K_indices[test_idx]
-        # S
-        split = splitter.split(labels_S_indices, groups=labels_S)
-        train_idx, test_idx = next(split)
-        train_idx_S, test_idx_S = labels_S_indices[train_idx], labels_S_indices[test_idx]
-
-        # concatenate both
-        train_index = np.concatenate((train_idx_K, train_idx_S))
-        test_index = np.concatenate((test_idx_K, test_idx_S))
-
-        # create bias by imagings
-        train_index = self.bias_array(imagings, train_index, self.imagings_bias)
-        test_index = self.bias_array(imagings, test_index, self.imagings_bias)
-
-        # create bias by classes
-        train_index = self.bias_array(classes, train_index, self.classes_bias)
-        test_index = self.bias_array(classes, test_index, self.classes_bias)
-        # train_index = self.stratify_array(classes, train_index)
-        # test_index = self.stratify_array(classes, test_index)
-
-        return self.sample(images, labels, classes, imagings, train_index, test_index)
-
-    @staticmethod
-    def bias_array(in_array, set_indices, bias_dict):
-        random.seed(0)
-        # display unique classes and calculate number of samples per each classes
-        unique_classes, samples_classes = np.unique(in_array[set_indices], return_counts=True)
-        samples_per_class = dict(zip(unique_classes, samples_classes))
-
-        class_name_b, class_ratio_b = max(
-            bias_dict.items()
-        )  # get for which class the most samples will be needed
-        samples_max_b = samples_per_class[class_name_b]
-
-        class_indices = []
-        for class_name, samples in samples_per_class.items():
-            indices = np.where(in_array[set_indices] == class_name)[0]
-            # under-sample without replacement
-            num_to_sample = int(samples_max_b * bias_dict[class_name] / class_ratio_b)
-            indices = random.sample(indices.tolist(), num_to_sample)
-            class_indices.append(indices)
-        return np.sort(set_indices[np.concatenate(class_indices)])
-
-
-class KrkaBiasedImagingsSampler(BaseBiasedSampler):
+class KrkaBiasedImagingsSampler(BaseStratifySampler):
     def __init__(self, training, train_test_split_size):
         variety_acronym = "KK"
         labels_to_remove = {"K": "KK-K-09", "S": "KK-S-01"}
-        imagings_bias = {
-            "imaging-1": 0.1,
-            "imaging-2": 0.1,
-            "imaging-3": 0.1,
-            "imaging-4": 0.1,
-            "imaging-5": 0.6,
+        distributions = {
+            "imaging-1": self.Distribution(share_I=0.1, share_C=1, share_D=1),
+            "imaging-2": self.Distribution(share_I=0.1, share_C=1, share_D=1),
+            "imaging-3": self.Distribution(share_I=0.1, share_C=1, share_D=1),
+            "imaging-4": self.Distribution(share_I=0.1, share_C=1, share_D=1),
+            "imaging-5": self.Distribution(share_I=1, share_C=1, share_D=1),
         }
-        classes_bias = {
-            "KIS_krka_control": 0.5,
-            "KIS_krka_drought": 0.5,
-        }
-
         super().__init__(
-            training,
-            train_test_split_size,
-            variety_acronym,
-            labels_to_remove,
-            imagings_bias=imagings_bias,
-            classes_bias=classes_bias,
+            training, train_test_split_size, variety_acronym, labels_to_remove, distributions
         )
+
+

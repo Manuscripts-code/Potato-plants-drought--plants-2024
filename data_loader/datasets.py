@@ -32,6 +32,9 @@ class PlantsDataset(Dataset):
         )
         self.classes = self.label_encoder.fit_transform(self.classes)
 
+        # unique, counts = np.unique(self.classes[self.imagings == "imaging-3"], return_counts=True)
+        # print(dict(zip(unique, counts)))
+
     def _get_data_dir(self, data_dir):
         data_dir = glob.glob(data_dir + "/*")
         if configs.USE_CASHED_IMAGES and configs.CASHED_IMAGES_DIR:
