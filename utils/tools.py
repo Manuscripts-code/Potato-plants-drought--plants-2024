@@ -62,8 +62,8 @@ def calculate_confidence_interval(data, statistic):
     return res.confidence_interval
 
 
-def calculate_metric_and_confidence_interval(data_df, metric):
-    data = (data_df["target"].to_numpy(), data_df["prediction"].to_numpy())
+def calculate_metric_and_confidence_interval(data_df, metric, prediction_key="prediction"):
+    data = (data_df["target"].to_numpy(), data_df[prediction_key].to_numpy())
     mean = metric(*data)
     ci = calculate_confidence_interval(data, statistic=metric)
     return mean, ci

@@ -56,7 +56,7 @@ def plot_relevances_amplitudes(relevances):
     # plt.axhline(y=1.5, color="r", linestyle="-")
 
 
-def plot_roc_curves(data_dfs):
+def plot_roc_curves(data_dfs, title=""):
     if not isinstance(data_dfs, list):
         data_dfs = [data_dfs]
 
@@ -64,7 +64,7 @@ def plot_roc_curves(data_dfs):
     no_colors = len(data_dfs)
     colors = cmap(np.linspace(0, 1, no_colors))
 
-    fig, ax = plt.subplots(figsize=(8, 7), dpi=50)
+    fig, ax = plt.subplots(figsize=(8, 7), dpi=100)
     ax.plot([0, 1], [0, 1], linestyle="--", lw=2, color="r", label="Chance (AUC=0.5)", alpha=0.9)
     for idx, data_df in enumerate(data_dfs):
         mean_auc, mean_fpr, mean_tpr, tprs_upper, tprs_lower = calculate_roc_curve(data_df)
@@ -80,14 +80,13 @@ def plot_roc_curves(data_dfs):
         ax.fill_between(mean_fpr, tprs_lower, tprs_upper, color=colors[idx], alpha=0.5)
 
     ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05])
-    plt.tick_params(labelsize=20)
-    plt.xlabel("1-Specificity", fontsize=20)
-    plt.ylabel("Sensitivity", fontsize=20)
-    ax.legend(loc="lower right", fontsize=17)
+    plt.tick_params(labelsize=22)
+    ax.set_title(title, fontsize=24)
+    ax.set_ylabel("Sensitivity", fontsize=24)
+    ax.set_xlabel("1-Specificity", fontsize=24)
+    ax.legend(loc="lower right", fontsize=22)
     ax.spines["bottom"].set_linewidth(2)
     ax.spines["left"].set_linewidth(2)
     ax.spines["right"].set_linewidth(0)
     ax.spines["top"].set_linewidth(0)
     # plt.savefig("AUC.pdf", format="pdf")
-    plt.show()
-    plt.close()

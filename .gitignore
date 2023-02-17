@@ -138,3 +138,6 @@ experiments
 # images
 *.img
 *.hdr
+
+# saved results
+/saved
