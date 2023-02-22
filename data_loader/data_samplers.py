@@ -255,28 +255,12 @@ class KrkaDumbSampler(BaseSimpleSampler):
         super().__init__(training, train_test_split_size, variety_acronym, labels_to_remove, dumb)
 
 
-class SavinjaDumbSampler(BaseSimpleSampler):
-    def __init__(self, training, train_test_split_size):
-        variety_acronym = "KS"
-        labels_to_remove = {"K": "KS-K-15", "S": ["KS-S-04", "KS-S-12"]}
-        dumb = True
-        super().__init__(training, train_test_split_size, variety_acronym, labels_to_remove, dumb)
-
-
 # Simple samplers which do not take into consideration the labels of the images
 # slices arbitrarily distributed into train and test sets
 class KrkaRandomSampler(BaseSimpleSampler):
     def __init__(self, training, train_test_split_size):
         variety_acronym = "KK"
         labels_to_remove = {"K": "KK-K-09", "S": "KK-S-01"}
-        dumb = False
-        super().__init__(training, train_test_split_size, variety_acronym, labels_to_remove, dumb)
-
-
-class SavinjaRandomSampler(BaseSimpleSampler):
-    def __init__(self, training, train_test_split_size):
-        variety_acronym = "KS"
-        labels_to_remove = {"K": "KS-K-15", "S": ["KS-S-04", "KS-S-12"]}
         dumb = False
         super().__init__(training, train_test_split_size, variety_acronym, labels_to_remove, dumb)
 
@@ -330,39 +314,14 @@ class KrkaStratifySampler(BaseStratifySampler):
         )
 
 
-class SavinjaStratifySampler(BaseStratifySampler):
-    def __init__(self, training, train_test_split_size):
-        variety_acronym = "KS"
-        labels_to_remove = {"K": "KS-K-15", "S": ["KS-S-04", "KS-S-12"]}
-        distributions = None
-        super().__init__(
-            training, train_test_split_size, variety_acronym, labels_to_remove, distributions
-        )
-
-
 ####################################################################################################
 # Samplers with pre-defined biases
+
 
 class KrkaBiasedImagingsSampler(BaseStratifySampler):
     def __init__(self, training, train_test_split_size):
         variety_acronym = "KK"
         labels_to_remove = {"K": "KK-K-09", "S": "KK-S-01"}
-        distributions = {
-            "imaging-1": self.Distribution(share_I=0.1, share_C=1, share_D=1),
-            "imaging-2": self.Distribution(share_I=0.1, share_C=1, share_D=1),
-            "imaging-3": self.Distribution(share_I=0.1, share_C=1, share_D=1),
-            "imaging-4": self.Distribution(share_I=0.1, share_C=1, share_D=1),
-            "imaging-5": self.Distribution(share_I=1, share_C=1, share_D=1),
-        }
-        super().__init__(
-            training, train_test_split_size, variety_acronym, labels_to_remove, distributions
-        )
-
-
-class SavinjaBiasedImagingsSampler(BaseStratifySampler):
-    def __init__(self, training, train_test_split_size):
-        variety_acronym = "KS"
-        labels_to_remove = {"K": "KS-K-15", "S": ["KS-S-04", "KS-S-12"]}
         distributions = {
             "imaging-1": self.Distribution(share_I=0.1, share_C=1, share_D=1),
             "imaging-2": self.Distribution(share_I=0.1, share_C=1, share_D=1),
