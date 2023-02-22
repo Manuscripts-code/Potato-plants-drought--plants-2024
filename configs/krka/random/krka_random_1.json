@@ -11,9 +11,9 @@
     "data_loader": {
         "type": "HypDataLoader",
         "args": {
-            "imagings_used": ["imaging-5", "imaging-4"],
+            "imagings_used": ["imaging-1"],
             "dataset": "PlantsDataset",
-            "data_sampler": "SavinjaStratifySampler",
+            "data_sampler": "KrkaRandomSampler",
             "batch_size": 32,
             "shuffle": true,
             "train_test_split_size": 0.2,
