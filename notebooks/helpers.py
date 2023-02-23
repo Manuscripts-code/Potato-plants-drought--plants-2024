@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import mlflow
@@ -37,3 +38,23 @@ def import_artifacts_from_runID(run_id):
 
     artifacts = {"model": model, "data_loader": data_loader, "device": device, "config": config}
     return artifacts
+
+
+def load_ids_from_registry():
+    # get experiments ids-es and remove .trash
+    experiments_ids = [f for f in os.listdir(configs.MODEL_REGISTRY) if not f.startswith(".")]
+    # write data dict where key represent experiment by name and value correspond to runs under that experiment
+    data_all = {
+        mlflow.get_experiment(exp_id).name: mlflow.search_runs(exp_id) for exp_id in experiments_ids
+    }
+    # extract train ids
+    run_ids = data_all["train_CNN"]["run_id"].tolist()
+    return run_ids
+
+
+def get_plot_name(config):
+    imagings_str = "".join(config["data_loader"]["args"]["imagings_used"])
+    imagings_str = "".join(list(filter(str.isdigit, imagings_str)))
+    sampler_str = config["data_loader"]["args"]["data_sampler"]
+    name = sampler_str + imagings_str
+    return name
