@@ -29,7 +29,7 @@
             "amsgrad": true
         }
     },
-    "loss": "bce_loss",
+    "loss": "loss",
     "metrics": [
         "accuracy",
         "f1"

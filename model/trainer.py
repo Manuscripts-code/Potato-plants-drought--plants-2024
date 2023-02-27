@@ -16,6 +16,11 @@ from utils.utils import ensure_dir, inf_loop, write_json, write_txt
 from .helpers import MetricTracker, TensorboardWriter
 
 
+class OutputHook(list):
+    def __call__(self, module, input, output):
+        self.append(output)
+
+
 class BaseTrainer:
     """
     Base class for all trainers
@@ -246,6 +251,9 @@ class Trainer(BaseTrainer):
         if not self.do_validation and "val_" in self.mnt_metric:
             self.mnt_metric = self.mnt_metric.replace("val_", "")
 
+        self.output_hook = OutputHook()
+        self.model.spectral.act2.register_forward_hook(self.output_hook)
+
     def _train_epoch(self, epoch):
         """
         Training logic for an epoch
@@ -262,9 +270,13 @@ class Trainer(BaseTrainer):
 
             self.optimizer.zero_grad()
             pred_class = self.model(data)
-            loss = self.criterion(pred_class, target)  # classification loss
+            loss_bce = self.criterion("bce")(pred_class, target)  # classification loss
+            l1_penalty = self.criterion("l1")(self.output_hook[0])  # l1 penalty on 1d band scaler vector
+
+            loss = loss_bce + l1_penalty * 0.1
             loss.backward()
             self.optimizer.step()
+            self.output_hook.clear()
 
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
             self.train_metrics.update("loss", loss.item())
@@ -311,7 +323,11 @@ class Trainer(BaseTrainer):
                 data, target = data.to(self.device), target.to(self.device)
 
                 pred_class = self.model(data)
-                loss = self.criterion(pred_class, target)  # classification loss
+                loss = self.criterion("bce")(pred_class, target)  # classification loss
+                l1_penalty = self.criterion("l1")(
+                    self.output_hook[0]
+                )  # l1 penalty on 1d band scaler vector
+                loss = loss + l1_penalty * 0.1
 
                 self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, "valid")
                 self.valid_metrics.update("loss", loss.item())

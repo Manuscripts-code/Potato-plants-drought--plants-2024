@@ -3,9 +3,6 @@ from abc import abstractmethod
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-
-from configs import configs
 
 
 class BaseModel(nn.Module):
@@ -153,14 +150,14 @@ class SpectralAttentionBlock(nn.Module):
 
     def forward(self, x):
         identity = x
-        out = torch.mean(x, dim=(2, 3))
-        out = self.fc1(out)
-        out = self.act1(out)
-        out = self.fc2(out)
-        out = self.act2(out)
-        out = out[:, :, None, None]
-        out = out * identity
-        return out
+        x = torch.mean(x, dim=(2, 3))
+        x = self.fc1(x)
+        x = self.act1(x)
+        x = self.fc2(x)
+        x = self.act2(x)
+        x = x[:, :, None, None]
+        x = x * identity
+        return x
 
 
 class ConvNet(BaseModel):

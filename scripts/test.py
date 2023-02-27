@@ -71,7 +71,8 @@ def test(config):
             data, target = data.to(device), target.to(device)
 
             pred_class = model(data)
-            loss = loss_fn(pred_class, target)
+            loss = loss_fn("bce")(pred_class, target)  # classification loss
+            
             target_list.append(target.cpu().numpy())
             pred_list.append(pred_class.cpu().numpy())
 
