@@ -5,7 +5,7 @@
         "type": "ConvNet",
         "args": {
             "layers": [2, 2, 2, 2],
-            "img_channels": 373
+            "img_channels": 428
         }
     },
     "data_loader": {
@@ -46,7 +46,7 @@
         "save_period": 1,
         "verbosity": 2,
         "monitor": "min val_loss",
-        "early_stop": 50,
+        "early_stop": 30,
         "tensorboard": false
     }
 }

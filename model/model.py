@@ -1,10 +1,11 @@
 from abc import abstractmethod
-from configs import configs
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+from configs import configs
 
 
 class BaseModel(nn.Module):
@@ -182,7 +183,7 @@ class ConvNet(BaseModel):
         self.base_width = width_per_group
         self.normalization = normalization
 
-        self.spectral = SpectralAttentionBlock(img_channels)
+        self.spectral = SpectralAttentionBlock(img_channels, reduction=8)
         self.conv1 = BasicConv(
             img_channels,
             self.inplanes,
@@ -254,9 +255,9 @@ class ConvNet(BaseModel):
                 nn.init.constant_(m.bias, 0)
                 # TODO
             elif isinstance(m, SpectralAttentionBlock):
-                nn.init.constant_(m.fc1.weight, 0.1)
+                nn.init.constant_(m.fc1.weight, 0.01)
                 nn.init.constant_(m.fc1.bias, 0)
-                nn.init.constant_(m.fc2.weight, 0.1)
+                nn.init.constant_(m.fc2.weight, 0.01)
                 nn.init.constant_(m.fc2.bias, 0)
 
         if zero_init_residual:

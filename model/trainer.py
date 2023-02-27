@@ -280,9 +280,10 @@ class Trainer(BaseTrainer):
 
             if batch_idx == self.len_epoch:
                 break
-            if keyboard.is_pressed("e"):
-                self.logger.info("You pressed <e> to exit training.")
-                self.stop_flag = True
+            # Uncomment if you would like to end training before the end
+            # if keyboard.is_pressed("e"):
+            #     self.logger.info("You pressed <e> to exit training.")
+            #     self.stop_flag = True
 
         log = self.train_metrics.result()
 

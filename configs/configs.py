@@ -24,7 +24,7 @@ CASHED_IMAGES_DIR = BASE_DIR / "data"
 USE_CASHED_IMAGES = True
 SAVE_CASHED_IMAGES = True
 NOISY_BANDS = np.concatenate(
-	[np.arange(26), np.arange(140, 171), np.arange(430, 448)]
+    [np.arange(0, 5), np.arange(155, 165), np.arange(443, 448)]
 )  # hardcoded bands to remove
 IMG_SIZE = 50
 GROUPS = {
