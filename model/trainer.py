@@ -253,7 +253,7 @@ class Trainer(BaseTrainer):
 
         self.output_hook = OutputHook()
         self.model.spectral.act2.register_forward_hook(self.output_hook)
-        self.l1_lambda = 0
+        self.l1_lambda = 0.1
 
     def _train_epoch(self, epoch):
         """

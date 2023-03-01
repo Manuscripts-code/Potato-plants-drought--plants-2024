@@ -137,7 +137,7 @@ class BasicResidualBlock(nn.Module):
 
 
 class SpectralAttentionBlock(nn.Module):
-    def __init__(self, inplanes, reduction=1):
+    def __init__(self, inplanes, reduction=2):
         super(SpectralAttentionBlock, self).__init__()
 
         self.inplanes = inplanes
@@ -253,9 +253,9 @@ class ConvNet(BaseModel):
                 # TODO
             elif isinstance(m, SpectralAttentionBlock):
                 nn.init.constant_(m.fc1.weight, 0.1)
-                nn.init.constant_(m.fc1.bias, 0.1)
+                nn.init.constant_(m.fc1.bias, 0)
                 nn.init.constant_(m.fc2.weight, 0.1)
-                nn.init.constant_(m.fc2.bias, 0.1)
+                nn.init.constant_(m.fc2.bias, 0)
 
         if zero_init_residual:
             for m in self.modules():
