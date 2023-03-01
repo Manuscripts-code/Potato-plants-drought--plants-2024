@@ -38,8 +38,8 @@ def train(config):
     if len(device_ids) > 1:
         model = torch.nn.DataParallel(model, device_ids=device_ids)
 
-    # get function handles of loss and metrics
-    criterion = getattr(module_loss, config["loss"])
+    # get handles of loss and metrics
+    criterion = config.init_obj("loss", module_loss)
     metrics = [getattr(module_metric, met) for met in config["metrics"]]
 
     # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler

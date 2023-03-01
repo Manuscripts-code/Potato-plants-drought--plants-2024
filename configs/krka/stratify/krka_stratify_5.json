@@ -29,7 +29,12 @@
             "amsgrad": true
         }
     },
-    "loss": "loss",
+    "loss": {
+        "type": "Loss",
+        "args": {
+            "l1_lambda": 0.0
+        }
+    },
     "metrics": [
         "accuracy",
         "f1"
@@ -42,7 +47,7 @@
         }
     },
     "trainer": {
-        "epochs": 200,
+        "epochs": 10,
         "save_period": 1,
         "verbosity": 2,
         "monitor": "min val_loss",

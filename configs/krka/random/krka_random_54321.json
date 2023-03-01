@@ -29,7 +29,12 @@
             "amsgrad": true
         }
     },
-    "loss": "bce_loss",
+    "loss": {
+        "type": "Loss",
+        "args": {
+            "l1_lambda": 0.0
+        }
+    },
     "metrics": [
         "accuracy",
         "f1"

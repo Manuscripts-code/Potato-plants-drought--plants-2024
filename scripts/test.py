@@ -40,7 +40,7 @@ def test(config):
     model = config.init_obj("arch", module_arch)
 
     # get function handles of loss and metrics
-    loss_fn = getattr(module_loss, config["loss"])
+    loss_fn = config.init_obj("loss", module_loss)
     metric_fns = [getattr(module_metric, met) for met in config["metrics"]]
 
     checkpoint = torch.load(config.resume / "artifacts/checkpoints" / "model_best.pth")

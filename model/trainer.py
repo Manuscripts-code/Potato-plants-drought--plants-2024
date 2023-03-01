@@ -253,7 +253,6 @@ class Trainer(BaseTrainer):
 
         self.output_hook = OutputHook()
         self.model.spectral.act2.register_forward_hook(self.output_hook)
-        self.l1_lambda = 0.1
 
     def _train_epoch(self, epoch):
         """
@@ -274,7 +273,7 @@ class Trainer(BaseTrainer):
             loss = self.criterion("bce")(pred_class, target)  # classification loss
             l1_penalty = self.criterion("l1")(self.output_hook[0])  # l1 penalty on 1d band scaler vector
 
-            loss = loss + l1_penalty * self.l1_lambda
+            loss = loss + l1_penalty
             loss.backward()
             self.optimizer.step()
             self.output_hook.clear()
@@ -328,7 +327,7 @@ class Trainer(BaseTrainer):
                 l1_penalty = self.criterion("l1")(
                     self.output_hook[0]
                 )  # l1 penalty on 1d band scaler vector
-                loss = loss + l1_penalty * self.l1_lambda
+                loss = loss + l1_penalty
 
                 self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, "valid")
                 self.valid_metrics.update("loss", loss.item())
