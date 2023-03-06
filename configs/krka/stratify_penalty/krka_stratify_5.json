@@ -32,7 +32,7 @@
     "loss": {
         "type": "Loss",
         "args": {
-            "l1_lambda": 0.0
+            "l1_lambda": 0.1
         }
     },
     "metrics": [

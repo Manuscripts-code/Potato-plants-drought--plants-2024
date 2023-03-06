@@ -11,7 +11,7 @@
     "data_loader": {
         "type": "HypDataLoader",
         "args": {
-            "imagings_used": ["imaging-5"],
+            "imagings_used": ["imaging-5", "imaging-4", "imaging-3", "imaging-2"],
             "dataset": "PlantsDataset",
             "data_sampler": "KrkaStratifySampler",
             "batch_size": 32,
@@ -32,7 +32,7 @@
     "loss": {
         "type": "Loss",
         "args": {
-            "l1_lambda": 0.0
+            "l1_lambda": 0.1
         }
     },
     "metrics": [
