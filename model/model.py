@@ -140,21 +140,26 @@ class SpectralAttentionBlock(nn.Module):
     def __init__(self, inplanes, reduction=2):
         super(SpectralAttentionBlock, self).__init__()
 
-        self.inplanes = inplanes
-
         mid_planes = inplanes // reduction
         self.fc1 = nn.Linear(inplanes, mid_planes)
         self.fc2 = nn.Linear(mid_planes, inplanes)
         self.act1 = nn.ReLU()
         self.act2 = nn.Sigmoid()
 
-    def forward(self, x):
-        identity = x
-        x = torch.mean(x, dim=(2, 3))
+    def _shared_network(self, x):
         x = self.fc1(x)
         x = self.act1(x)
         x = self.fc2(x)
         x = self.act2(x)
+        return x
+
+    def forward(self, x):
+        identity = x
+        x_mean = torch.mean(x, dim=(2, 3))
+        x_max = torch.amax(x, dim=(2, 3))
+        x_mean = self._shared_network(x_mean)
+        x_max = self._shared_network(x_max)
+        x = x_mean + x_max
         x = x[:, :, None, None]
         x = x * identity
         return x
@@ -264,10 +269,10 @@ class ConvNet(BaseModel):
 
     def forward(self, x):
         x = self.spectral(x)
-        x = self.conv1(x)  # torch.Size([32, 64, 32, 32])
-        x = self.maxpool(x)  # torch.Size([32, 64, 16, 16])
+        x = self.conv1(x)  
+        x = self.maxpool(x)  
 
-        x = self.layer1(x)  # torch.Size([32, 64, 16, 16])
+        x = self.layer1(x)  
         x = self.layer2(x)
         x = self.layer3(x)
         x = self.layer4(x)

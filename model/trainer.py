@@ -272,6 +272,7 @@ class Trainer(BaseTrainer):
             pred_class = self.model(data)
             loss = self.criterion("bce")(pred_class, target)  # classification loss
             l1_penalty = self.criterion("l1")(self.output_hook[0])  # l1 penalty on 1d band scaler vector
+            # check attention batch averaged attention : print(self.output_hook[0].mean(0))
 
             loss = loss + l1_penalty
             loss.backward()
