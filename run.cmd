@@ -1,8 +1,8 @@
 @REM ___ Krka stratify configs (correct plant depentant split) ___
-@REM python main.py -c configs/krka/stratify/krka_stratify_5.json -m train_test
-@REM python main.py -c configs/krka/stratify/krka_stratify_4.json -m train_test
-@REM python main.py -c configs/krka/stratify/krka_stratify_3.json -m train_test
-@REM python main.py -c configs/krka/stratify/krka_stratify_2.json -m train_test
+python main.py -c configs/krka/stratify/krka_stratify_5.json -m train_test
+python main.py -c configs/krka/stratify/krka_stratify_4.json -m train_test
+python main.py -c configs/krka/stratify/krka_stratify_3.json -m train_test
+python main.py -c configs/krka/stratify/krka_stratify_2.json -m train_test
 @REM python main.py -c configs/krka/stratify/krka_stratify_1.json -m train_test
 @REM python main.py -c configs/krka/stratify/krka_stratify_54.json -m train_test
 @REM python main.py -c configs/krka/stratify/krka_stratify_543.json -m train_test
@@ -10,10 +10,10 @@
 @REM python main.py -c configs/krka/stratify/krka_stratify_54321.json -m train_test
 
 @REM ___ Krka stratify configs + added l1 penalty(correct plant depentant split) ___
-@REM python main.py -c configs/krka/stratify_penalty/krka_stratify_5.json -m train_test
-@REM python main.py -c configs/krka/stratify_penalty/krka_stratify_4.json -m train_test
-@REM python main.py -c configs/krka/stratify_penalty/krka_stratify_3.json -m train_test
-@REM python main.py -c configs/krka/stratify_penalty/krka_stratify_2.json -m train_test
+python main.py -c configs/krka/stratify_penalty/krka_stratify_5.json -m train_test
+python main.py -c configs/krka/stratify_penalty/krka_stratify_4.json -m train_test
+python main.py -c configs/krka/stratify_penalty/krka_stratify_3.json -m train_test
+python main.py -c configs/krka/stratify_penalty/krka_stratify_2.json -m train_test
 @REM python main.py -c configs/krka/stratify_penalty/krka_stratify_1.json -m train_test
 @REM python main.py -c configs/krka/stratify_penalty/krka_stratify_5432.json -m train_test
 
