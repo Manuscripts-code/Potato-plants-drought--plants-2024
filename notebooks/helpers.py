@@ -1,12 +1,18 @@
 import os
+from operator import itemgetter
 from pathlib import Path
 
 import mlflow
+import numpy as np
+import pandas as pd
 import torch
+from rich.progress import track
+from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score
 
 import data_loader.data_loaders as module_data
 import model.model as module_arch
 from configs import configs
+from utils.tools import calculate_metric_and_confidence_interval
 from utils.utils import read_json
 
 
@@ -53,8 +59,96 @@ def load_ids_from_registry():
 
 
 def get_plot_name(config):
+    sampler_str = config["data_loader"]["args"]["data_sampler"]
     imagings_str = "".join(config["data_loader"]["args"]["imagings_used"])
     imagings_str = "".join(list(filter(str.isdigit, imagings_str)))
-    sampler_str = config["data_loader"]["args"]["data_sampler"]
-    name = sampler_str + imagings_str
+    penalty_str = str(config["loss"]["args"]["l1_lambda"])
+    name = sampler_str + "-i" + imagings_str + "-p" + penalty_str
     return name
+
+
+def create_per_imaging_report(test_df, add_counts=False):
+    msg = ""
+    ST_SPACE = 20
+    for name, df in test_df.groupby("imaging"):
+        try:
+            msg += f"{name:<{ST_SPACE}}"
+            mean, ci = calculate_metric_and_confidence_interval(
+                df, roc_auc_score, prediction_key="prediction_proba"
+            )
+            msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})    "
+            mean, ci = calculate_metric_and_confidence_interval(df, f1_score)
+            msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})    "
+            mean, ci = calculate_metric_and_confidence_interval(df, precision_score)
+            msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})   "
+            mean, ci = calculate_metric_and_confidence_interval(df, recall_score)
+            msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})   \n"
+        except ValueError:
+            continue
+    msg += f"{'Total':<{ST_SPACE}}"
+    mean, ci = calculate_metric_and_confidence_interval(
+        test_df, roc_auc_score, prediction_key="prediction_proba"
+    )
+    msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})    "
+    mean, ci = calculate_metric_and_confidence_interval(test_df, f1_score)
+    msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})    "
+    mean, ci = calculate_metric_and_confidence_interval(test_df, precision_score)
+    msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})   "
+    mean, ci = calculate_metric_and_confidence_interval(test_df, recall_score)
+    msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})   \n\n"
+    if add_counts:
+        msg += test_df.astype("object").groupby("imaging").count().to_string()
+    return msg
+
+
+def load_test_df(run_id):
+    artifacts = import_artifacts_from_runID(run_id)
+    model, data_loader, device, config = itemgetter("model", "data_loader", "device", "config")(
+        artifacts
+    )
+
+    signatures_list = []
+    predictions_test = []
+    targets_test = []
+    labels_test = []
+    imagings_test = []
+    relevances_list = []
+    with torch.no_grad():
+        for data, target, metadata in track(data_loader, description="Loading data..."):
+            data = data.to(device)
+
+            # signatures
+            signature = torch.mean(data, dim=(2, 3))
+            signatures_list.append(signature.detach().cpu().numpy().flatten())
+
+            # metrics
+            prediction = model(data)
+            predictions_test.append(prediction.cpu().numpy())
+            targets_test.append(target.numpy())
+            labels_test.append(metadata["label"])
+            imagings_test.append(metadata["imaging"])
+
+            # relevances
+            output = model.spectral.fc1(signature)
+            output = model.spectral.act1(output)
+            output = model.spectral.fc2(output)
+            output = model.spectral.act2(output)
+            relevances_list.append(output.detach().cpu().numpy().flatten())
+
+    predictions_test = np.concatenate(predictions_test).flatten()
+    targets_test = np.concatenate(targets_test).flatten()
+    labels_test = np.concatenate(labels_test).flatten()
+    imagings_test = np.concatenate(imagings_test).flatten()
+
+    test_df = pd.DataFrame.from_dict(
+        {
+            "signature": signatures_list,
+            "relevance": relevances_list,
+            "imaging": imagings_test,
+            "label": labels_test,
+            "target": targets_test,
+            "prediction": predictions_test.round().astype("int"),
+            "prediction_proba": predictions_test,
+        }
+    )
+    return test_df, config
