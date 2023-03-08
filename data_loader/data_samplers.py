@@ -103,7 +103,7 @@ class Sampler(Protocol):
             indices_sep = random.sample(indices_sep.tolist(), samples_num)
             indices_resampled.append(indices_sep)
 
-        return np.sort(indices[np.concatenate(indices_resampled)])
+        return np.sort(indices[np.concatenate(indices_resampled).astype("int")])
 
     @staticmethod
     def separate_labels_by_treatment(labels, labels_to_remove, variety_acronym):
@@ -323,11 +323,27 @@ class KrkaBiasedImagingsSampler(BaseStratifySampler):
         variety_acronym = "KK"
         labels_to_remove = {"K": "KK-K-09", "S": "KK-S-01"}
         distributions = {
-            "imaging-1": self.Distribution(share_I=0.1, share_C=1, share_D=1),
-            "imaging-2": self.Distribution(share_I=0.1, share_C=1, share_D=1),
-            "imaging-3": self.Distribution(share_I=0.1, share_C=1, share_D=1),
-            "imaging-4": self.Distribution(share_I=0.1, share_C=1, share_D=1),
+            "imaging-1": self.Distribution(share_I=0, share_C=1, share_D=1),
+            "imaging-2": self.Distribution(share_I=0.2, share_C=1, share_D=1),
+            "imaging-3": self.Distribution(share_I=0.2, share_C=1, share_D=1),
+            "imaging-4": self.Distribution(share_I=0.2, share_C=1, share_D=1),
             "imaging-5": self.Distribution(share_I=1, share_C=1, share_D=1),
+        }
+        super().__init__(
+            training, train_test_split_size, variety_acronym, labels_to_remove, distributions
+        )
+
+
+class KrkaBiasedTreatmentSampler(BaseStratifySampler):
+    def __init__(self, training, train_test_split_size):
+        variety_acronym = "KK"
+        labels_to_remove = {"K": "KK-K-09", "S": "KK-S-01"}
+        distributions = {
+            "imaging-1": self.Distribution(share_I=0, share_C=1, share_D=1),
+            "imaging-2": self.Distribution(share_I=1, share_C=1, share_D=0.2),
+            "imaging-3": self.Distribution(share_I=1, share_C=1, share_D=0.2),
+            "imaging-4": self.Distribution(share_I=1, share_C=0.2, share_D=1),
+            "imaging-5": self.Distribution(share_I=1, share_C=0.2, share_D=1),
         }
         super().__init__(
             training, train_test_split_size, variety_acronym, labels_to_remove, distributions
