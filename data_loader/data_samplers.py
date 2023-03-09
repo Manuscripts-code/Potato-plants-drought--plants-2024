@@ -323,10 +323,10 @@ class KrkaBiasedImagingsSampler(BaseStratifySampler):
         variety_acronym = "KK"
         labels_to_remove = {"K": "KK-K-09", "S": "KK-S-01"}
         distributions = {
-            "imaging-1": self.Distribution(share_I=0, share_C=1, share_D=1),
+            "imaging-1": self.Distribution(share_I=0.2, share_C=1, share_D=1),
             "imaging-2": self.Distribution(share_I=0.2, share_C=1, share_D=1),
-            "imaging-3": self.Distribution(share_I=0.2, share_C=1, share_D=1),
-            "imaging-4": self.Distribution(share_I=0.2, share_C=1, share_D=1),
+            "imaging-3": self.Distribution(share_I=0.6, share_C=1, share_D=1),
+            "imaging-4": self.Distribution(share_I=1, share_C=1, share_D=1),
             "imaging-5": self.Distribution(share_I=1, share_C=1, share_D=1),
         }
         super().__init__(
@@ -339,9 +339,9 @@ class KrkaBiasedTreatmentSampler(BaseStratifySampler):
         variety_acronym = "KK"
         labels_to_remove = {"K": "KK-K-09", "S": "KK-S-01"}
         distributions = {
-            "imaging-1": self.Distribution(share_I=0, share_C=1, share_D=1),
+            "imaging-1": self.Distribution(share_I=1, share_C=1, share_D=0.2),
             "imaging-2": self.Distribution(share_I=1, share_C=1, share_D=0.2),
-            "imaging-3": self.Distribution(share_I=1, share_C=1, share_D=0.2),
+            "imaging-3": self.Distribution(share_I=1, share_C=0.6, share_D=0.6),
             "imaging-4": self.Distribution(share_I=1, share_C=0.2, share_D=1),
             "imaging-5": self.Distribution(share_I=1, share_C=0.2, share_D=1),
         }
