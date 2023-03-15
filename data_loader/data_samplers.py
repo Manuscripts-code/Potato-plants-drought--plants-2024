@@ -265,6 +265,14 @@ class KrkaRandomSampler(BaseSimpleSampler):
         super().__init__(training, train_test_split_size, variety_acronym, labels_to_remove, dumb)
 
 
+class SavinjaRandomSampler(BaseSimpleSampler):
+    def __init__(self, training, train_test_split_size):
+        variety_acronym = "KS"
+        labels_to_remove = {"K": "KS-K-15", "S": ["KS-S-04", "KS-S-12"]}
+        dumb = False
+        super().__init__(training, train_test_split_size, variety_acronym, labels_to_remove, dumb)
+
+
 ####################################################################################################
 # Stratify samplers sample the data in correct way (plants train/test splits)
 # Stratification is done by labels, classes and imagings.
@@ -313,6 +321,15 @@ class KrkaStratifySampler(BaseStratifySampler):
             training, train_test_split_size, variety_acronym, labels_to_remove, distributions
         )
 
+
+class SavinjaStratifySampler(BaseStratifySampler):
+    def __init__(self, training, train_test_split_size):
+        variety_acronym = "KS"
+        labels_to_remove = {"K": "KS-K-15", "S": ["KS-S-04", "KS-S-12"]}
+        distributions = None
+        super().__init__(
+            training, train_test_split_size, variety_acronym, labels_to_remove, distributions
+        )
 
 ####################################################################################################
 # Samplers with pre-defined biases
