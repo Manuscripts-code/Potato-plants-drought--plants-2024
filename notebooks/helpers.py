@@ -7,7 +7,8 @@ import numpy as np
 import pandas as pd
 import torch
 from rich.progress import track
-from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score
+from sklearn.metrics import (f1_score, precision_score, recall_score,
+                             roc_auc_score)
 
 import data_loader.data_loaders as module_data
 import model.model as module_arch
@@ -152,3 +153,24 @@ def load_test_df(run_id):
         }
     )
     return test_df, config
+
+
+def extract_info_from_absolute_path(filepath):
+    indices, labels, imaging, _ = Path(filepath).stem.split("__")
+    idx = int(indices.split("_")[1])
+    labels = labels.split("_")
+    identifier = labels[idx-1]
+    variety, class_ = identifier.split("-")[:2]
+    return imaging, identifier, class_, variety
+
+
+def create_dataframe_from_absolute_paths(filepaths):
+    data = []
+    for filepath in filepaths:
+        imaging, identifier, class_, variety = extract_info_from_absolute_path(filepath)
+        data.append([imaging, identifier, class_, variety])
+    return pd.DataFrame(data, columns=["imaging", "identifier", "class", "variety"])
+
+    
+    
+    

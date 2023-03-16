@@ -141,3 +141,6 @@ experiments
 
 # saved results
 /saved
+
+# html generated files
+pivottablejs.html
