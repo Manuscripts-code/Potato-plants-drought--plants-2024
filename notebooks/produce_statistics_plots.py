@@ -15,7 +15,7 @@ from notebooks.helpers import create_dataframe_from_absolute_paths
 from utils.utils import ensure_dir, write_txt
 
 # name to save the bar plot
-SAVE_NAME = "countplot_KS"
+SAVE_NAME = "countplot_label_KS"
 
 # General configs (filer before applying sampler)
 IMAGINGS = [
@@ -26,6 +26,7 @@ IMAGINGS = [
     "imaging-5",
 ]
 VARIETIES = ["KS"]
+IDENTIFIERS_TO_REMOVE = ["KS-K-15", "KS-S-04", "KS-S-12", "KK-K-09", "KK-S-01"]
 
 # samplers configs if used
 SAMPLER = "KrkaStratifySampler"
@@ -42,6 +43,7 @@ if __name__ == "__main__":
     # filter out samples with imaging not in IMAGINGS or
     df = df[df["imaging"].isin(IMAGINGS)].reset_index(drop=True)
     df = df[df["variety"].isin(VARIETIES)].reset_index(drop=True)
+    df = df[~df["identifier"].isin(IDENTIFIERS_TO_REMOVE)].reset_index(drop=True)
     # filer with provided sampler
     if SAMPLER is not None:
         sampler = getattr(data_samplers, SAMPLER)(TRAINING, TRAIN_TEST_SPLIT)
@@ -53,12 +55,17 @@ if __name__ == "__main__":
 
     save_bar_plots_dir = ensure_dir(configs.BASE_DIR / "saved/bar_plots")
 
-    ax = sns.countplot(data=df, x="imaging", hue="treatment")
+    plt.figure(figsize=(6, 4))
+    # ax = sns.countplot(data=df, x="imaging", hue="treatment")
+    ax = sns.countplot(data=df.sort_values(by="identifier"), x="identifier", color="orange", alpha=0.8)
+    ax.tick_params(axis="both", which="major", labelsize=10)
+    ax.tick_params(axis="both", which="minor", labelsize=10)
+    ax.tick_params(axis="x", labelrotation=45)
     ax.grid(False)
     ax.spines["bottom"].set_linewidth(2)
     ax.spines["left"].set_linewidth(2)
-    ax.spines[['right', 'top']].set_visible(False)
+    ax.spines[["right", "top"]].set_visible(False)
     for container in ax.containers:
-        ax.bar_label(container)
+        ax.bar_label(container, fontsize=10)
     save_path = save_bar_plots_dir / f"{SAVE_NAME}.pdf"
     plt.savefig(save_path, format="pdf", bbox_inches="tight")
