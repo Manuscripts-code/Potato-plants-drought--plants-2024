@@ -1,4 +1,5 @@
 import os
+from functools import partial
 from operator import itemgetter
 from pathlib import Path
 
@@ -68,33 +69,38 @@ def get_plot_name(config):
 
 
 def create_per_imaging_report(test_df, add_counts=False):
+    f1_score_ = partial(f1_score, average="weighted")
+    precision_score_ = partial(precision_score, average="weighted")
+    recall_score_ = partial(recall_score, average="weighted")
+    roc_auc_score_ = partial(roc_auc_score, average="weighted")
+
     msg = ""
     ST_SPACE = 20
     for name, df in test_df.groupby("imaging"):
         try:
             msg += f"{name:<{ST_SPACE}}"
             mean, ci = calculate_metric_and_confidence_interval(
-                df, roc_auc_score, prediction_key="prediction_proba"
+                df, roc_auc_score_, prediction_key="prediction_proba"
             )
             msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})    "
-            mean, ci = calculate_metric_and_confidence_interval(df, f1_score)
+            mean, ci = calculate_metric_and_confidence_interval(df, f1_score_)
             msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})    "
-            mean, ci = calculate_metric_and_confidence_interval(df, precision_score)
+            mean, ci = calculate_metric_and_confidence_interval(df, precision_score_)
             msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})   "
-            mean, ci = calculate_metric_and_confidence_interval(df, recall_score)
+            mean, ci = calculate_metric_and_confidence_interval(df, recall_score_)
             msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})   \n"
         except ValueError:
             continue
     msg += f"{'Total':<{ST_SPACE}}"
     mean, ci = calculate_metric_and_confidence_interval(
-        test_df, roc_auc_score, prediction_key="prediction_proba"
+        test_df, roc_auc_score_, prediction_key="prediction_proba"
     )
     msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})    "
-    mean, ci = calculate_metric_and_confidence_interval(test_df, f1_score)
+    mean, ci = calculate_metric_and_confidence_interval(test_df, f1_score_)
     msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})    "
-    mean, ci = calculate_metric_and_confidence_interval(test_df, precision_score)
+    mean, ci = calculate_metric_and_confidence_interval(test_df, precision_score_)
     msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})   "
-    mean, ci = calculate_metric_and_confidence_interval(test_df, recall_score)
+    mean, ci = calculate_metric_and_confidence_interval(test_df, recall_score_)
     msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})   \n\n"
     if add_counts:
         msg += test_df.astype("object").groupby("imaging").count().to_string()
