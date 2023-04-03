@@ -24,7 +24,8 @@ if __name__ == "__main__":
     # define directories where the outputs will be saved
     save_roc_curves_dir = ensure_dir(configs.BASE_DIR / "saved/roc_curves")
     save_metrics_report_dir = ensure_dir(configs.BASE_DIR / "saved/metrics_report")
-    save_relevances_dir = ensure_dir(configs.BASE_DIR / "saved/relevances")
+    save_relevances_plot_dir = ensure_dir(configs.BASE_DIR / "saved/relevances_plot")
+    save_relevances_bar_dir = ensure_dir(configs.BASE_DIR / "saved/relevances_bar")
     save_signatures_dir = ensure_dir(configs.BASE_DIR / "saved/signatures")
     report = ""
 
@@ -34,20 +35,31 @@ if __name__ == "__main__":
         # roc curves
         dfs = [df for _, df in test_df.groupby("imaging")]
         plot_roc_curves(dfs, title=name)
-        save_path = save_roc_curves_dir / f"{name}.png"
-        plt.savefig(save_path)
+        # save_path = save_roc_curves_dir / f"{name}.png"
+        # plt.savefig(save_path)
+        save_path = save_roc_curves_dir / f"{name}.pdf"
+        plt.savefig(save_path, format="pdf", bbox_inches="tight")
 
         # relevances
         relevances = np.mean(test_df["relevance"], axis=0)
         plot_relevances_amplitudes(relevances, title=name)
-        # plot_relavant_features(relevances)
-        save_path = save_relevances_dir / f"{name}.png"
-        plt.savefig(save_path)
+        # save_path = save_relevances_plot_dir / f"{name}.png"
+        # plt.savefig(save_path)
+        save_path = save_relevances_plot_dir / f"{name}.pdf"
+        plt.savefig(save_path, format="pdf", bbox_inches="tight")
+        
+        plot_relavant_features(relevances)
+        # save_path = save_relevances_bar_dir / f"{name}.png"
+        # plt.savefig(save_path)
+        save_path = save_relevances_bar_dir / f"{name}.pdf"
+        plt.savefig(save_path, format="pdf", bbox_inches="tight")
 
         # signatures
         plot_signatures(test_df["signature"].to_numpy(), test_df["target"].to_numpy(), title=name)
-        save_path = save_signatures_dir / f"{name}.png"
-        plt.savefig(save_path)
+        # save_path = save_signatures_dir / f"{name}.png"
+        # plt.savefig(save_path)
+        save_path = save_signatures_dir / f"{name}.pdf"
+        plt.savefig(save_path, format="pdf", bbox_inches="tight")
 
         # metrics report
         report += f"{name}\n"
