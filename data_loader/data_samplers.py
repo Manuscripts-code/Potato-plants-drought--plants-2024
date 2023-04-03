@@ -365,3 +365,35 @@ class KrkaBiasedTreatmentSampler(BaseStratifySampler):
         super().__init__(
             training, train_test_split_size, variety_acronym, labels_to_remove, distributions
         )
+
+
+class SavinjaBiasedImagingsSampler(BaseStratifySampler):
+    def __init__(self, training, train_test_split_size):
+        variety_acronym = "KS"
+        labels_to_remove = {"K": "KS-K-15", "S": ["KS-S-04", "KS-S-12"]}
+        distributions = {
+            "imaging-1": self.Distribution(share_I=0.2, share_C=1, share_D=1),
+            "imaging-2": self.Distribution(share_I=0.2, share_C=1, share_D=1),
+            "imaging-3": self.Distribution(share_I=0.6, share_C=1, share_D=1),
+            "imaging-4": self.Distribution(share_I=1, share_C=1, share_D=1),
+            "imaging-5": self.Distribution(share_I=1, share_C=1, share_D=1),
+        }
+        super().__init__(
+            training, train_test_split_size, variety_acronym, labels_to_remove, distributions
+        )
+
+
+class SavinjaBiasedTreatmentSampler(BaseStratifySampler):
+    def __init__(self, training, train_test_split_size):
+        variety_acronym = "KS"
+        labels_to_remove = {"K": "KS-K-15", "S": ["KS-S-04", "KS-S-12"]}
+        distributions = {
+            "imaging-1": self.Distribution(share_I=1, share_C=1, share_D=0.2),
+            "imaging-2": self.Distribution(share_I=1, share_C=1, share_D=0.2),
+            "imaging-3": self.Distribution(share_I=1, share_C=0.6, share_D=0.6),
+            "imaging-4": self.Distribution(share_I=1, share_C=0.2, share_D=1),
+            "imaging-5": self.Distribution(share_I=1, share_C=0.2, share_D=1),
+        }
+        super().__init__(
+            training, train_test_split_size, variety_acronym, labels_to_remove, distributions
+        )

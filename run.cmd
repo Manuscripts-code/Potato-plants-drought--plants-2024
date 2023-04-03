@@ -44,3 +44,7 @@
 @REM ___ Krka biased (plant dependant split, but biased underlying distribution) ___
 @REM python main.py -c configs/krka/bias/krka_bias_54321_im.json -m train_test
 @REM python main.py -c configs/krka/bias/krka_bias_54321_treat.json -m train_test
+
+@REM ___ Savinja biased (plant dependant split, but biased underlying distribution) ___
+@REM python main.py -c configs/savinja/bias/savinja_bias_54321_im.json -m train_test
+@REM python main.py -c configs/savinja/bias/savinja_bias_54321_treat.json -m train_test
