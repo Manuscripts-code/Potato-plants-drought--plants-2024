@@ -37,7 +37,7 @@ def import_artifacts_from_runID(run_id):
         config["data_loader"]["args"]["dataset"],
         config["data_loader"]["args"]["data_sampler"],
         train_test_split_size=config["data_loader"]["args"]["train_test_split_size"],
-        train_valid_split_size=config["data_loader"]["args"]["train_valid_split_size"],
+        train_valid_split_size=0,
         batch_size=1,
         shuffle=False,
         training=False,
@@ -79,6 +79,8 @@ def create_per_imaging_report(test_df, add_counts=False):
     for name, df in test_df.groupby("imaging"):
         try:
             msg += f"{name:<{ST_SPACE}}"
+            num_samples = "/".join(df['target'].value_counts().sort_index().astype("string").tolist())
+            msg += f"{num_samples:<{ST_SPACE}}"
             mean, ci = calculate_metric_and_confidence_interval(
                 df, roc_auc_score_, prediction_key="prediction_proba"
             )
@@ -91,7 +93,9 @@ def create_per_imaging_report(test_df, add_counts=False):
             msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})   \n"
         except ValueError:
             continue
-    msg += f"{'Total':<{ST_SPACE}}"
+    msg += f"{'Pooled':<{ST_SPACE}}"
+    num_samples = "/".join(test_df['target'].value_counts().sort_index().astype("string").tolist())
+    msg += f"{num_samples:<{ST_SPACE}}"
     mean, ci = calculate_metric_and_confidence_interval(
         test_df, roc_auc_score_, prediction_key="prediction_proba"
     )
@@ -101,9 +105,10 @@ def create_per_imaging_report(test_df, add_counts=False):
     mean, ci = calculate_metric_and_confidence_interval(test_df, precision_score_)
     msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})   "
     mean, ci = calculate_metric_and_confidence_interval(test_df, recall_score_)
-    msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})   \n\n"
+    msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})   "
     if add_counts:
         msg += test_df.astype("object").groupby("imaging").count().to_string()
+    msg += "\n\n"
     return msg
 
 
