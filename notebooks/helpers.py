@@ -17,7 +17,7 @@ from utils.tools import calculate_metric_and_confidence_interval
 from utils.utils import read_json
 
 
-def import_artifacts_from_runID(run_id):
+def import_artifacts_from_runID(run_id, training=False):
     experiment_id = mlflow.get_run(run_id=run_id).info.experiment_id
     artifacts_base_path = Path(configs.MODEL_REGISTRY, experiment_id, run_id, "artifacts")
     config = read_json(artifacts_base_path / "configs/config.json")
@@ -40,7 +40,7 @@ def import_artifacts_from_runID(run_id):
         train_valid_split_size=0,
         batch_size=1,
         shuffle=False,
-        training=False,
+        training=training,
     )
 
     artifacts = {"model": model, "data_loader": data_loader, "device": device, "config": config}
@@ -84,13 +84,13 @@ def create_per_imaging_report(test_df, add_counts=False):
             mean, ci = calculate_metric_and_confidence_interval(
                 df, roc_auc_score_, prediction_key="prediction_proba"
             )
-            msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})    "
+            msg += f"{mean:.2f} ({ci[0]:.2f}, {ci[1]:.2f})    "
             mean, ci = calculate_metric_and_confidence_interval(df, f1_score_)
-            msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})    "
+            msg += f"{mean:.2f} ({ci[0]:.2f}, {ci[1]:.2f})    "
             mean, ci = calculate_metric_and_confidence_interval(df, precision_score_)
-            msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})   "
+            msg += f"{mean:.2f} ({ci[0]:.2f}, {ci[1]:.2f})   "
             mean, ci = calculate_metric_and_confidence_interval(df, recall_score_)
-            msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})   \n"
+            msg += f"{mean:.2f} ({ci[0]:.2f}, {ci[1]:.2f})   \n"
         except ValueError:
             continue
     msg += f"{'Pooled':<{ST_SPACE}}"
@@ -99,21 +99,21 @@ def create_per_imaging_report(test_df, add_counts=False):
     mean, ci = calculate_metric_and_confidence_interval(
         test_df, roc_auc_score_, prediction_key="prediction_proba"
     )
-    msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})    "
+    msg += f"{mean:.2f} ({ci[0]:.2f}, {ci[1]:.2f})    "
     mean, ci = calculate_metric_and_confidence_interval(test_df, f1_score_)
-    msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})    "
+    msg += f"{mean:.2f} ({ci[0]:.2f}, {ci[1]:.2f})    "
     mean, ci = calculate_metric_and_confidence_interval(test_df, precision_score_)
-    msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})   "
+    msg += f"{mean:.2f} ({ci[0]:.2f}, {ci[1]:.2f})   "
     mean, ci = calculate_metric_and_confidence_interval(test_df, recall_score_)
-    msg += f"{mean:.3f} ({ci[0]:.3f}, {ci[1]:.3f})   "
+    msg += f"{mean:.2f} ({ci[0]:.2f}, {ci[1]:.2f})   "
     if add_counts:
         msg += test_df.astype("object").groupby("imaging").count().to_string()
     msg += "\n\n"
     return msg
 
 
-def load_test_df(run_id):
-    artifacts = import_artifacts_from_runID(run_id)
+def load_test_df(run_id, training=False):
+    artifacts = import_artifacts_from_runID(run_id, training)
     model, data_loader, device, config = itemgetter("model", "data_loader", "device", "config")(
         artifacts
     )

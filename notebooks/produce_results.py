@@ -16,10 +16,12 @@ from utils.plot_utils import (
 )
 from utils.utils import ensure_dir, write_txt
 
+TRAINING = False
+
 if __name__ == "__main__":
     # load test_data
     run_ids = load_ids_from_registry()
-    test_data = [(load_test_df(run_id)) for run_id in run_ids]
+    test_data = [(load_test_df(run_id, training=TRAINING)) for run_id in run_ids]
 
     # define directories where the outputs will be saved
     save_roc_curves_dir = ensure_dir(configs.BASE_DIR / "saved/roc_curves")
@@ -47,7 +49,7 @@ if __name__ == "__main__":
         # plt.savefig(save_path)
         save_path = save_relevances_plot_dir / f"{name}.pdf"
         plt.savefig(save_path, format="pdf", bbox_inches="tight")
-        
+
         plot_relavant_features(relevances)
         # save_path = save_relevances_bar_dir / f"{name}.png"
         # plt.savefig(save_path)
