@@ -351,7 +351,12 @@ class KrkaStratifySampler(BaseStratifySampler):
         distributions = None
         samples_num_max = {"train": None, "test": None}
         super().__init__(
-            training, train_test_split_size, variety_acronym, labels_to_remove, distributions, samples_num_max
+            training,
+            train_test_split_size,
+            variety_acronym,
+            labels_to_remove,
+            distributions,
+            samples_num_max,
         )
 
 
@@ -362,7 +367,12 @@ class SavinjaStratifySampler(BaseStratifySampler):
         distributions = None
         samples_num_max = {"train": None, "test": 30}
         super().__init__(
-            training, train_test_split_size, variety_acronym, labels_to_remove, distributions, samples_num_max
+            training,
+            train_test_split_size,
+            variety_acronym,
+            labels_to_remove,
+            distributions,
+            samples_num_max,
         )
 
 
@@ -383,7 +393,12 @@ class KrkaBiasedImagingsSampler(BaseStratifySampler):
         }
         samples_num_max = {"train": None, "test": None}
         super().__init__(
-            training, train_test_split_size, variety_acronym, labels_to_remove, distributions, samples_num_max
+            training,
+            train_test_split_size,
+            variety_acronym,
+            labels_to_remove,
+            distributions,
+            samples_num_max,
         )
 
 
@@ -400,7 +415,12 @@ class KrkaBiasedTreatmentSampler(BaseStratifySampler):
         }
         samples_num_max = {"train": None, "test": None}
         super().__init__(
-            training, train_test_split_size, variety_acronym, labels_to_remove, distributions, samples_num_max
+            training,
+            train_test_split_size,
+            variety_acronym,
+            labels_to_remove,
+            distributions,
+            samples_num_max,
         )
 
 
@@ -409,15 +429,20 @@ class SavinjaBiasedImagingsSampler(BaseStratifySampler):
         variety_acronym = "KS"
         labels_to_remove = {"K": "KS-K-15", "S": ["KS-S-04", "KS-S-12"]}
         distributions = {
-            "imaging-1": self.Distribution(share_I=0.2, share_C=1, share_D=1),
-            "imaging-2": self.Distribution(share_I=0.2, share_C=1, share_D=1),
+            "imaging-5": self.Distribution(share_I=0.2, share_C=1, share_D=1),
+            "imaging-4": self.Distribution(share_I=0.2, share_C=1, share_D=1),
             "imaging-3": self.Distribution(share_I=0.6, share_C=1, share_D=1),
-            "imaging-4": self.Distribution(share_I=1, share_C=1, share_D=1),
-            "imaging-5": self.Distribution(share_I=1, share_C=1, share_D=1),
+            "imaging-2": self.Distribution(share_I=1, share_C=1, share_D=1),
+            "imaging-1": self.Distribution(share_I=1, share_C=1, share_D=1),
         }
         samples_num_max = {"train": None, "test": 30}
         super().__init__(
-            training, train_test_split_size, variety_acronym, labels_to_remove, distributions, samples_num_max
+            training,
+            train_test_split_size,
+            variety_acronym,
+            labels_to_remove,
+            distributions,
+            samples_num_max,
         )
 
 
@@ -426,13 +451,18 @@ class SavinjaBiasedTreatmentSampler(BaseStratifySampler):
         variety_acronym = "KS"
         labels_to_remove = {"K": "KS-K-15", "S": ["KS-S-04", "KS-S-12"]}
         distributions = {
-            "imaging-1": self.Distribution(share_I=1, share_C=1, share_D=0.2),
-            "imaging-2": self.Distribution(share_I=1, share_C=1, share_D=0.2),
+            "imaging-5": self.Distribution(share_I=1, share_C=1, share_D=0.2),
+            "imaging-4": self.Distribution(share_I=1, share_C=1, share_D=0.2),
             "imaging-3": self.Distribution(share_I=1, share_C=0.6, share_D=0.6),
-            "imaging-4": self.Distribution(share_I=1, share_C=0.2, share_D=1),
-            "imaging-5": self.Distribution(share_I=1, share_C=0.2, share_D=1),
+            "imaging-2": self.Distribution(share_I=1, share_C=0.2, share_D=1),
+            "imaging-1": self.Distribution(share_I=1, share_C=0.2, share_D=1),
         }
         samples_num_max = {"train": None, "test": 30}
         super().__init__(
-            training, train_test_split_size, variety_acronym, labels_to_remove, distributions, samples_num_max
+            training,
+            train_test_split_size,
+            variety_acronym,
+            labels_to_remove,
+            distributions,
+            samples_num_max,
         )
