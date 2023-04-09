@@ -77,22 +77,19 @@ def create_per_imaging_report(test_df, add_counts=False):
     msg = ""
     ST_SPACE = 20
     for name, df in test_df.groupby("imaging"):
-        try:
-            msg += f"{name:<{ST_SPACE}}"
-            num_samples = "/".join(df['target'].value_counts().sort_index().astype("string").tolist())
-            msg += f"{num_samples:<{ST_SPACE}}"
-            mean, ci = calculate_metric_and_confidence_interval(
-                df, roc_auc_score_, prediction_key="prediction_proba"
-            )
-            msg += f"{mean:.2f} ({ci[0]:.2f}, {ci[1]:.2f})    "
-            mean, ci = calculate_metric_and_confidence_interval(df, f1_score_)
-            msg += f"{mean:.2f} ({ci[0]:.2f}, {ci[1]:.2f})    "
-            mean, ci = calculate_metric_and_confidence_interval(df, precision_score_)
-            msg += f"{mean:.2f} ({ci[0]:.2f}, {ci[1]:.2f})   "
-            mean, ci = calculate_metric_and_confidence_interval(df, recall_score_)
-            msg += f"{mean:.2f} ({ci[0]:.2f}, {ci[1]:.2f})   \n"
-        except ValueError:
-            continue
+        msg += f"{name:<{ST_SPACE}}"
+        num_samples = "/".join(df['target'].value_counts().sort_index().astype("string").tolist())
+        msg += f"{num_samples:<{ST_SPACE}}"
+        mean, ci = calculate_metric_and_confidence_interval(
+            df, roc_auc_score_, prediction_key="prediction_proba"
+        )
+        msg += f"{mean:.2f} ({ci[0]:.2f}, {ci[1]:.2f})    "
+        mean, ci = calculate_metric_and_confidence_interval(df, f1_score_)
+        msg += f"{mean:.2f} ({ci[0]:.2f}, {ci[1]:.2f})    "
+        mean, ci = calculate_metric_and_confidence_interval(df, precision_score_)
+        msg += f"{mean:.2f} ({ci[0]:.2f}, {ci[1]:.2f})   "
+        mean, ci = calculate_metric_and_confidence_interval(df, recall_score_)
+        msg += f"{mean:.2f} ({ci[0]:.2f}, {ci[1]:.2f})   \n"
     msg += f"{'Pooled':<{ST_SPACE}}"
     num_samples = "/".join(test_df['target'].value_counts().sort_index().astype("string").tolist())
     msg += f"{num_samples:<{ST_SPACE}}"

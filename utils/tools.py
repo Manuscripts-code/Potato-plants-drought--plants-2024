@@ -49,17 +49,22 @@ def find_signal_peaks(signal):
 
 
 def calculate_confidence_interval(data, statistic):
-    res = bootstrap(
-        data,
-        statistic=statistic,
-        n_resamples=1000,
-        confidence_level=0.95,
-        random_state=0,
-        paired=True,
-        vectorized=False,
-        method="BCa",
-    )
-    return res.confidence_interval
+    try:
+        res = bootstrap(
+            data,
+            statistic=statistic,
+            n_resamples=1000,
+            confidence_level=0.95,
+            random_state=0,
+            paired=True,
+            vectorized=False,
+            method="BCa",
+        )
+        ci = res.confidence_interval
+    except ValueError as e:
+        print(e)
+        ci = [1, 1]
+    return ci
 
 
 def calculate_metric_and_confidence_interval(data_df, metric, prediction_key="prediction"):
