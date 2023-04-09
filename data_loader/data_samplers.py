@@ -88,12 +88,13 @@ class Sampler(Protocol):
         return int(samples_num_max * share_class * distribution.share_I)
 
     @staticmethod
-    def resample_indices(imagings, classes, indices, distributions=None):
+    def resample_indices(imagings, classes, indices, distributions=None, samples_num_max=None):
         random.seed(0)
         imagings_unique = np.unique(imagings[indices])
         classes_unique = np.unique(classes[indices])
 
-        samples_num_max = Sampler._get_max_samples(imagings, classes, indices)
+        if samples_num_max is None:
+            samples_num_max = Sampler._get_max_samples(imagings, classes, indices)
 
         indices_resampled = []
         for imaging, class_ in itertools.product(imagings_unique, classes_unique):
@@ -213,12 +214,15 @@ class Sampler(Protocol):
 
 
 class BaseSimpleSampler(Sampler):
-    def __init__(self, training, train_test_split_size, variety_acronym, labels_to_remove, dumb):
+    def __init__(
+        self, training, train_test_split_size, variety_acronym, labels_to_remove, dumb, samples_num_max
+    ):
         self.training = training
         self.train_test_split_size = train_test_split_size
         self.variety_acronym = variety_acronym
         self.labels_to_remove = labels_to_remove
         self.dumb = dumb
+        self.samples_num_max = samples_num_max
 
     def __call__(self, images, labels, classes, imagings):
         labels_K_indices, labels_S_indices = self.separate_labels_by_treatment(
@@ -240,8 +244,12 @@ class BaseSimpleSampler(Sampler):
             classes = classes_unique[np.random.randint(0, len(classes_unique), (len(classes)))]
 
         # stratify by imagings and classes for train and test indices
-        train_index = self.resample_indices(imagings, classes, indices=train_index)
-        test_index = self.resample_indices(imagings, classes, indices=test_index)
+        train_index = self.resample_indices(
+            imagings, classes, indices=train_index, samples_num_max=self.samples_num_max["train"]
+        )
+        test_index = self.resample_indices(
+            imagings, classes, indices=test_index, samples_num_max=self.samples_num_max["test"]
+        )
 
         return self.sample(images, labels, classes, imagings, train_index, test_index)
 
@@ -252,7 +260,10 @@ class KrkaDumbSampler(BaseSimpleSampler):
         variety_acronym = "KK"
         labels_to_remove = {"K": "KK-K-09", "S": "KK-S-01"}
         dumb = True
-        super().__init__(training, train_test_split_size, variety_acronym, labels_to_remove, dumb)
+        samples_num_max = {"train": None, "test": None}
+        super().__init__(
+            training, train_test_split_size, variety_acronym, labels_to_remove, dumb, samples_num_max
+        )
 
 
 # Simple samplers which do not take into consideration the labels of the images
@@ -262,7 +273,10 @@ class KrkaRandomSampler(BaseSimpleSampler):
         variety_acronym = "KK"
         labels_to_remove = {"K": "KK-K-09", "S": "KK-S-01"}
         dumb = False
-        super().__init__(training, train_test_split_size, variety_acronym, labels_to_remove, dumb)
+        samples_num_max = {"train": None, "test": 54}
+        super().__init__(
+            training, train_test_split_size, variety_acronym, labels_to_remove, dumb, samples_num_max
+        )
 
 
 class SavinjaRandomSampler(BaseSimpleSampler):
@@ -270,7 +284,10 @@ class SavinjaRandomSampler(BaseSimpleSampler):
         variety_acronym = "KS"
         labels_to_remove = {"K": "KS-K-15", "S": ["KS-S-04", "KS-S-12"]}
         dumb = False
-        super().__init__(training, train_test_split_size, variety_acronym, labels_to_remove, dumb)
+        samples_num_max = {"train": None, "test": None}
+        super().__init__(
+            training, train_test_split_size, variety_acronym, labels_to_remove, dumb, samples_num_max
+        )
 
 
 ####################################################################################################
@@ -280,13 +297,20 @@ class SavinjaRandomSampler(BaseSimpleSampler):
 
 class BaseStratifySampler(Sampler):
     def __init__(
-        self, training, train_test_split_size, variety_acronym, labels_to_remove, distributions
+        self,
+        training,
+        train_test_split_size,
+        variety_acronym,
+        labels_to_remove,
+        distributions,
+        samples_num_max,
     ):
         self.training = training
         self.train_test_split_size = train_test_split_size
         self.variety_acronym = variety_acronym
         self.labels_to_remove = labels_to_remove
         self.distributions = distributions
+        self.samples_num_max = samples_num_max
 
     def __call__(self, images, labels, classes, imagings):
         labels_K_indices, labels_S_indices = self.separate_labels_by_treatment(
@@ -299,10 +323,18 @@ class BaseStratifySampler(Sampler):
 
         # stratify by imagings and classes for train and test indices
         train_index = self.resample_indices(
-            imagings, classes, indices=train_index, distributions=self.distributions
+            imagings,
+            classes,
+            indices=train_index,
+            distributions=self.distributions,
+            samples_num_max=self.samples_num_max["train"],
         )
         test_index = self.resample_indices(
-            imagings, classes, indices=test_index, distributions=self.distributions
+            imagings,
+            classes,
+            indices=test_index,
+            distributions=self.distributions,
+            samples_num_max=self.samples_num_max["test"],
         )
 
         ## check the distribution, e.g. for imagings
@@ -317,8 +349,9 @@ class KrkaStratifySampler(BaseStratifySampler):
         variety_acronym = "KK"
         labels_to_remove = {"K": "KK-K-09", "S": "KK-S-01"}
         distributions = None
+        samples_num_max = {"train": None, "test": None}
         super().__init__(
-            training, train_test_split_size, variety_acronym, labels_to_remove, distributions
+            training, train_test_split_size, variety_acronym, labels_to_remove, distributions, samples_num_max
         )
 
 
@@ -327,9 +360,11 @@ class SavinjaStratifySampler(BaseStratifySampler):
         variety_acronym = "KS"
         labels_to_remove = {"K": "KS-K-15", "S": ["KS-S-04", "KS-S-12"]}
         distributions = None
+        samples_num_max = {"train": None, "test": 30}
         super().__init__(
-            training, train_test_split_size, variety_acronym, labels_to_remove, distributions
+            training, train_test_split_size, variety_acronym, labels_to_remove, distributions, samples_num_max
         )
+
 
 ####################################################################################################
 # Samplers with pre-defined biases
@@ -346,8 +381,9 @@ class KrkaBiasedImagingsSampler(BaseStratifySampler):
             "imaging-4": self.Distribution(share_I=1, share_C=1, share_D=1),
             "imaging-5": self.Distribution(share_I=1, share_C=1, share_D=1),
         }
+        samples_num_max = {"train": None, "test": None}
         super().__init__(
-            training, train_test_split_size, variety_acronym, labels_to_remove, distributions
+            training, train_test_split_size, variety_acronym, labels_to_remove, distributions, samples_num_max
         )
 
 
@@ -362,8 +398,9 @@ class KrkaBiasedTreatmentSampler(BaseStratifySampler):
             "imaging-4": self.Distribution(share_I=1, share_C=0.2, share_D=1),
             "imaging-5": self.Distribution(share_I=1, share_C=0.2, share_D=1),
         }
+        samples_num_max = {"train": None, "test": None}
         super().__init__(
-            training, train_test_split_size, variety_acronym, labels_to_remove, distributions
+            training, train_test_split_size, variety_acronym, labels_to_remove, distributions, samples_num_max
         )
 
 
@@ -378,8 +415,9 @@ class SavinjaBiasedImagingsSampler(BaseStratifySampler):
             "imaging-4": self.Distribution(share_I=1, share_C=1, share_D=1),
             "imaging-5": self.Distribution(share_I=1, share_C=1, share_D=1),
         }
+        samples_num_max = {"train": None, "test": 30}
         super().__init__(
-            training, train_test_split_size, variety_acronym, labels_to_remove, distributions
+            training, train_test_split_size, variety_acronym, labels_to_remove, distributions, samples_num_max
         )
 
 
@@ -394,6 +432,7 @@ class SavinjaBiasedTreatmentSampler(BaseStratifySampler):
             "imaging-4": self.Distribution(share_I=1, share_C=0.2, share_D=1),
             "imaging-5": self.Distribution(share_I=1, share_C=0.2, share_D=1),
         }
+        samples_num_max = {"train": None, "test": 30}
         super().__init__(
-            training, train_test_split_size, variety_acronym, labels_to_remove, distributions
+            training, train_test_split_size, variety_acronym, labels_to_remove, distributions, samples_num_max
         )
