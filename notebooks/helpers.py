@@ -179,3 +179,18 @@ def create_dataframe_from_absolute_paths(filepaths):
         imaging, identifier, class_, variety = extract_info_from_absolute_path(filepath)
         data.append([imaging, identifier, class_, variety])
     return pd.DataFrame(data, columns=["imaging", "identifier", "treatment", "variety"])
+
+
+def create_wavelengths_report(relevances):
+    relevances_ext = np.zeros_like(configs.BANDS_ORIGINAL)
+    # remove the pre-defined noisy bands and assign values to the remaining places
+    relevances_ext[np.delete(np.arange(len(configs.BANDS_ORIGINAL)), configs.NOISY_BANDS)] = relevances
+    indices_by_relevance = np.argsort(relevances_ext)[::-1]
+    wavelengths_by_relevance = np.array(configs.BANDS_ORIGINAL)[indices_by_relevance]
+    report = {
+        "indices_by_relevance": indices_by_relevance.tolist(),
+        "wavelengths_by_relevance": wavelengths_by_relevance.tolist(),
+    }
+    return report
+
+

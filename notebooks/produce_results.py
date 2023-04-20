@@ -7,6 +7,7 @@ from notebooks.helpers import (
     get_plot_name,
     load_ids_from_registry,
     load_test_df,
+    create_wavelengths_report,
 )
 from utils.plot_utils import (
     plot_relavant_features,
@@ -14,13 +15,14 @@ from utils.plot_utils import (
     plot_roc_curves,
     plot_signatures,
 )
-from utils.utils import ensure_dir, write_txt
+from utils.utils import ensure_dir, write_txt, write_json
 
 TRAINING = False
 
 if __name__ == "__main__":
     # load test_data
     run_ids = load_ids_from_registry()
+    # run_ids = ["6820e4edf73f4655827f8aeefe659e54", "109c91055eca4d4684f54b4636629821"]
     test_data = [(load_test_df(run_id, training=TRAINING)) for run_id in run_ids]
 
     # define directories where the outputs will be saved
@@ -28,6 +30,7 @@ if __name__ == "__main__":
     save_metrics_report_dir = ensure_dir(configs.BASE_DIR / "saved/metrics_report")
     save_relevances_plot_dir = ensure_dir(configs.BASE_DIR / "saved/relevances_plot")
     save_relevances_bar_dir = ensure_dir(configs.BASE_DIR / "saved/relevances_bar")
+    save_wavelengths_dir = ensure_dir(configs.BASE_DIR / "saved/wavelengths")
     save_signatures_dir = ensure_dir(configs.BASE_DIR / "saved/signatures")
     report = ""
 
@@ -55,6 +58,10 @@ if __name__ == "__main__":
         # plt.savefig(save_path)
         save_path = save_relevances_bar_dir / f"{name}.pdf"
         plt.savefig(save_path, format="pdf", bbox_inches="tight")
+
+        # save relevant wavelengths
+        wavelengths_report = create_wavelengths_report(relevances)
+        write_json(wavelengths_report, save_wavelengths_dir / f"{name}.json")
 
         # signatures
         plot_signatures(test_df["signature"].to_numpy(), test_df["target"].to_numpy(), title=name)
