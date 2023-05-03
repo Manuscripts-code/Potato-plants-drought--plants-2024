@@ -4,6 +4,7 @@ import numpy as np
 from matplotlib.collections import LineCollection
 from matplotlib.lines import Line2D
 from sklearn import preprocessing
+from sklearn.metrics import roc_auc_score
 
 from configs import configs
 from utils.tools import calculate_roc_curve, find_signal_peaks
@@ -54,11 +55,14 @@ def plot_relevances_amplitudes(relevances, title=""):
 
     plt.tick_params(labelsize=22)
     ax.set_title(title, fontsize=24)
-    ax.set_ylabel("Sensitivity", fontsize=24)
-    ax.set_xlabel("1-Specificity", fontsize=24)
+    ax.set_xlabel("Wavelength [nm]", fontsize=24)
+    ax.spines["bottom"].set_linewidth(2)
+    ax.spines["left"].set_linewidth(2)
+    ax.spines["right"].set_linewidth(0)
+    ax.spines["top"].set_linewidth(0)
 
-    peak_heights_dict, peak_indexes = find_signal_peaks(y)
-    [plt.text(x[idx], peak_heights_dict[idx], int(x[idx])) for idx in peak_indexes]
+    # peak_heights_dict, peak_indexes = find_signal_peaks(y)
+    # [plt.text(x[idx], peak_heights_dict[idx], int(x[idx]), fontsize=18) for idx in peak_indexes]
     # plt.axhline(y=1, color="r", linestyle="--", alpha=0.6)
 
 
@@ -74,12 +78,13 @@ def plot_roc_curves(data_dfs, title=""):
     ax.plot([0, 1], [0, 1], linestyle="--", lw=2, color="r", label="Chance (AUC=0.5)", alpha=0.9)
     for idx, data_df in enumerate(data_dfs):
         mean_auc, mean_fpr, mean_tpr, tprs_upper, tprs_lower = calculate_roc_curve(data_df)
+        mean_auc = roc_auc_score(data_df["target"], data_df["prediction_proba"], average="weighted")
 
         ax.plot(
             mean_fpr,
             mean_tpr,
             color=colors[idx],
-            label=f"data {idx} (AUC={mean_auc:.2f})",
+            label=f"Imaging {idx+1} (AUC={mean_auc:.2f})",
             lw=2,
             alpha=0.9,
         )
@@ -90,7 +95,7 @@ def plot_roc_curves(data_dfs, title=""):
     ax.set_title(title, fontsize=24)
     ax.set_ylabel("Sensitivity", fontsize=24)
     ax.set_xlabel("1-Specificity", fontsize=24)
-    ax.legend(loc="lower right", fontsize=22)
+    ax.legend(loc="lower right", fontsize=22, framealpha=1)
     ax.spines["bottom"].set_linewidth(2)
     ax.spines["left"].set_linewidth(2)
     ax.spines["right"].set_linewidth(0)
@@ -122,19 +127,18 @@ def plot_signatures(
         signatures = signatures_mean
         labels = labels_mean
 
-    fig = plt.figure()
-    fig.set_figheight(5)
-    fig.set_figwidth(15)
+    fig, ax = plt.subplots(figsize=(8, 7), dpi=100)
 
-    ax = fig.add_subplot(1, 1, 1)
     ax.set_title(title, fontsize=24)
     ax.set_ylabel(y_label, fontsize=24)
     ax.set_xlabel(x_label, fontsize=24)
     ax.tick_params(axis="both", which="major", labelsize=22)
     ax.tick_params(axis="both", which="minor", labelsize=22)
     ax.set_ylim([0, 1])
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
+    ax.spines["bottom"].set_linewidth(2)
+    ax.spines["left"].set_linewidth(2)
+    ax.spines["right"].set_linewidth(0)
+    ax.spines["top"].set_linewidth(0)
 
     no_colors = len(np.unique(labels))
     colors = ["g", "r"]
