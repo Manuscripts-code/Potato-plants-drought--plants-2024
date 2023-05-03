@@ -279,7 +279,7 @@ class Trainer(BaseTrainer):
             self.optimizer.step()
             self.output_hook.clear()
 
-            self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
+            # self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
             self.train_metrics.update("loss", loss.item())
             for met in self.metric_ftns:
                 self.train_metrics.update(met.__name__, met(pred_class, target))
@@ -330,14 +330,14 @@ class Trainer(BaseTrainer):
                 )  # l1 penalty on 1d band scaler vector
                 loss = loss + l1_penalty
 
-                self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, "valid")
+                # self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, "valid")
                 self.valid_metrics.update("loss", loss.item())
                 for met in self.metric_ftns:
                     self.valid_metrics.update(met.__name__, met(pred_class, target))
 
         # add histogram of model parameters to the tensorboard
-        for name, p in self.model.named_parameters():
-            self.writer.add_histogram(name, p, bins="auto")
+        # for name, p in self.model.named_parameters():
+        #     self.writer.add_histogram(name, p, bins="auto")
         return self.valid_metrics.result()
 
     def _progress(self, batch_idx):
