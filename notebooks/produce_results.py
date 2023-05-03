@@ -4,10 +4,10 @@ import numpy as np
 from configs import configs
 from notebooks.helpers import (
     create_per_imaging_report,
+    create_wavelengths_report,
     get_plot_name,
     load_ids_from_registry,
     load_test_df,
-    create_wavelengths_report,
 )
 from utils.plot_utils import (
     plot_relavant_features,
@@ -15,14 +15,20 @@ from utils.plot_utils import (
     plot_roc_curves,
     plot_signatures,
 )
-from utils.utils import ensure_dir, write_txt, write_json
+from utils.utils import ensure_dir, write_json, write_txt
 
 TRAINING = False
 
-if __name__ == "__main__":
-    # load test_data
-    run_ids = load_ids_from_registry()
-    # run_ids = ["6820e4edf73f4655827f8aeefe659e54", "109c91055eca4d4684f54b4636629821"]
+
+def produce_results(run_id=None):
+    if run_id is not None:
+        run_ids = [run_id]
+        TRAINING = False
+    else:
+        # load test_data
+        run_ids = load_ids_from_registry()
+        # run_ids = ["6820e4edf73f4655827f8aeefe659e54", "109c91055eca4d4684f54b4636629821"]
+
     test_data = [(load_test_df(run_id, training=TRAINING)) for run_id in run_ids]
 
     # define directories where the outputs will be saved
@@ -77,6 +83,5 @@ if __name__ == "__main__":
     write_txt(report, save_metrics_report_dir / "metrics_report.txt")
 
 
-# Use this to save the plots as pdfs
-# save_path = DIR / f"{name}.pdf"
-# plt.savefig(save_path, format="pdf", bbox_inches="tight")
+if __name__ == "__main__":
+    produce_results()
