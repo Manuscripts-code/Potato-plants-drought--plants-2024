@@ -7,8 +7,8 @@ from utils.utils import ensure_dir, write_txt
 
 if __name__ == "__main__":
     data = {
-        "AUC-ROC": [0.742, 0.76, 0.869, 0.817, 0.61, 0.875, 0.654, 0.568],
-        "Error": [0.04, 0.03, 0.03, 0.04, 0.05, 0.03, 0.07, 0.06],
+        "AUC-ROC": [0.74, 0.74, 0.87, 0.82, 0.64, 0.87, 0.76, 0.67],
+        "Error": [0.04, 0.04, 0.03, 0.05, 0.07, 0.04, 0.08, 0.08],
         "Dataset": [
             "Unbiased--stratify-split",
             "Unbiased--random-split",
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     ax.spines["left"].set_linewidth(1)
     ax.spines[["right", "top"]].set_visible(False)
     ax.legend(title="Dataset", loc="lower right", framealpha=1)
-    # ax.get_legend().remove()
+    ax.get_legend().remove()
     ax.set_ylim(0, 1)
     ax.set_ylabel("AUC-ROC", fontsize=14)
     ax.set_xlabel("Variety", fontsize=14)
