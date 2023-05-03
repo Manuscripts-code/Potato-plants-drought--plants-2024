@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import mlflow
@@ -5,6 +6,7 @@ import numpy as np
 from torchvision import transforms
 
 import data_loader.transformations as transforms_hyp
+from utils.utils import read_json
 
 ### Registry and log ###
 BASE_DIR = Path(__file__).parent.parent.absolute()
@@ -19,38 +21,50 @@ mlflow.set_tracking_uri(TRACKING_URI)
 
 
 ### Data loading ###
-DATA_DIR = "C:\\Users\\janezla\\Documents\\DATA\\ana_converted\\imagings"
+DATA_DIR = os.environ.get("DATA_DIR")
 CASHED_IMAGES_DIR = BASE_DIR / "data"
-USE_CASHED_IMAGES = True
-SAVE_CASHED_IMAGES = True
-NOISY_BANDS = np.concatenate(
-    [np.arange(0, 5), np.arange(155, 165), np.arange(443, 448)]
-)  # hardcoded bands to remove
+USE_CASHED_IMAGES = False
+SAVE_CASHED_IMAGES = False
+
+
+### Wavelengths to skip in training ###
+# uncomment accordingly
+# 1.) Remove only noisy and overlapping bands between the two cameras
+NOISY_BANDS = np.concatenate([np.arange(0, 5), np.arange(155, 165), np.arange(443, 448)])
+# 2.) Keep only N most prominent wavelengths
+# change N and variety file accordingly
+# wavelengths_to_keep = 50  # N
+# variety_file = "savinja_wavelengths.json"
+# wavelengths_ = read_json(str(BASE_DIR / Path("configs/wavelengths") / variety_file))
+# NOISY_BANDS = wavelengths_["indices_by_relevance"][wavelengths_to_keep:]
+
+
+### Image configs ###
 IMG_SIZE = 50
 GROUPS = {
-	# groupes by labels
-	"KK-K": "KIS_krka_control",
-	"KK-S": "KIS_krka_drought",
-	"KS-K": "KIS_savinja_control",
-	"KS-S": "KIS_savinja_drought",
+    # groupes by labels
+    "KK-K": "KIS_krka_control",
+    "KK-S": "KIS_krka_drought",
+    "KS-K": "KIS_savinja_control",
+    "KS-S": "KIS_savinja_drought",
 }
 TRANSFORM_TRAIN = transforms.Compose(
-	[
-		transforms_hyp.RandomMirror(),
-		transforms_hyp.RandomCrop(IMG_SIZE),
-		transforms.ToTensor(),
-	]
+    [
+        transforms_hyp.RandomMirror(),
+        transforms_hyp.RandomCrop(IMG_SIZE),
+        transforms.ToTensor(),
+    ]
 )
 TRANSFORM_TEST = transforms.Compose(
-	[
-		transforms_hyp.Rescale(IMG_SIZE),
-		transforms.ToTensor(),
-	]
+    [
+        transforms_hyp.Rescale(IMG_SIZE),
+        transforms.ToTensor(),
+    ]
 )
 TRANSFORM_DURING_LOADING = transforms.Compose([transforms_hyp.NoTransformation()])
 
 
-### Visualization ###
+### Visualization wavelengths ###
 BANDS_ORIGINAL = [
     409.759827,
     413.398185,
