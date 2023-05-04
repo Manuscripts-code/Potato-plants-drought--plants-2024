@@ -23,7 +23,6 @@ TRAINING = False
 def produce_results(run_id=None):
     if run_id is not None:
         run_ids = [run_id]
-        TRAINING = False
     else:
         # load test_data
         run_ids = load_ids_from_registry()
