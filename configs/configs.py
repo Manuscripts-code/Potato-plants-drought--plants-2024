@@ -3,10 +3,13 @@ from pathlib import Path
 
 import mlflow
 import numpy as np
+from dotenv import load_dotenv
 from torchvision import transforms
 
 import data_loader.transformations as transforms_hyp
 from utils.utils import read_json
+
+load_dotenv()
 
 ### Registry and log ###
 BASE_DIR = Path(__file__).parent.parent.absolute()
@@ -22,6 +25,7 @@ mlflow.set_tracking_uri(TRACKING_URI)
 
 ### Data loading ###
 DATA_DIR = os.environ.get("DATA_DIR")
+print(f"data dir:{DATA_DIR}")
 CASHED_IMAGES_DIR = BASE_DIR / "data"
 USE_CASHED_IMAGES = False
 SAVE_CASHED_IMAGES = False
