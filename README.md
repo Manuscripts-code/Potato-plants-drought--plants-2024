@@ -1,56 +1,90 @@
-## Readme linked to version v0.1
+# Potato plants deep learning
 
-### Commands
-Train CNN:
-```
-python main.py -c configs/conv/config_autoencoder_hyp.json -m train_conv
-```
+## Introduction
 
-Train CNN with changed set validation split to zero:
-```
-python main.py -c configs/conv/config_autoencoder_hyp.json -m train_conv -vs 0
-```
+place abstract here
 
-Fine-tune already trained CNN with validation split set to zero:
-```
-python main.py -r 31f63e986396487cbb0b28526bbb6d1d -m train_conv -vs 0.0 --learning_rate 0.00001
-```
+## Getting started
 
-Test CNN:
-```
-python main.py -r edcaa45741d14b939310fa561b4b8eb3 -m test_conv
-```
+### Requirements (desired)
 
-Train and test CNN:
+* Sufficiently powerful GPU, min. 4GB VRAM
+* Min. 64 GB RAM
+* Min. 100 GB available storage memory
+
+### Local setup
+
+Setup is written for Windows machine. However, the same setup is required for Linux machine.
+
+1) Create and activate a virtual environment:
+
 ```
-python main.py -c configs/conv/config_autoencoder_hyp.json -m train_test_conv
+conda create -n env-eval python=3.9
+conda activate env-eval
 ```
 
-Train traditional model (SVM):
+2) Install packages into the virtual environment:
+
 ```
-python main.py -c configs/trad/config_svm.json -m train_trad
+pip install -r requirements.txt
 ```
 
-Test traditional model (SVM):
-```
-python main.py -r 0621cdf2506d4303ae7ecfbe07747c8e -m test_trad
+3) Install Pytorch CUDA support if not automatically installed.
+
+### Dataset
+
+Download the data from [Zenodo](10.5281/zenodo.7936850) and unzip to folder named `imagings`.
+The folder structure should look like:
+
+  ```
+  imagings
+  │
+  ├── imaging-1
+  │   ├── 0_1_0__KK-K-04_KS-K-05_KK-S-03__imaging-1__1-22_20000_us_2x_HSNR02_ 2022-05-11T104633_corr_rad_f32.hdr
+  │   ├── 0_1_0__KK-K-04_KS-K-05_KK-S-03__imaging-1__1-22_20000_us_2x_HSNR02_2022-05-11T104633_corr_rad_f32.img
+  │   └── . . .
+  ├── imaging-2
+  ├── imaging-3
+  ├── imaging-4
+  └── imaging-5
+  
 ```
 
-Settings from above coppied from vscode launch file:
+Then, create `.env` file in repository root (next to `.env.example`) and specify the **absolute** path to extracted data location.
+For example, if the data is located in `C:\\Users\\janezla\\Documents\\imagings`, write the following in the `.env` file (without spaces and unusual characters):
+
 ```
-// "args": ["-c","configs/conv/config_autoencoder_hyp.json", "-m", "train_conv"],
-// "args": ["-c","configs/conv/config_autoencoder_hyp.json", "-m", "train_conv", "-vs", "0"],
-// "args": ["-r", "31f63e986396487cbb0b28526bbb6d1d", "-m", "train_conv", "-vs", "0.0", "--learning_rate", "0.00001"],
-// "args": ["-r", "0621cdf2506d4303ae7ecfbe07747c8e", "-m", "test_conv"]
-// "args": ["-c","configs/conv/config_autoencoder_hyp.json", "-m", "train_test_conv"],
-// "args": ["-c","configs/trad/config_svm.json", "-m", "train_trad"]
-// "args": ["-r", "0621cdf2506d4303ae7ecfbe07747c8e", "-m", "test_trad"]
+DATA_DIR=C:\\Users\\janezla\\Documents\\imagings
 ```
 
+## How to use
 
-### Run mlflow server to observe experiments
+### Train and evaluate
+
+Run the following command to train the model on training data and evaluate on testing data.
+
+```
+python main.py -c configs/krka/stratify/krka_stratify_54321.json -m train_test
+```
+
+Use different json config file accordingly.
+
+### Observe experiments
+
+The experiments are automatically created by using mlflow tool. To start mlflow server run:
+
 ```
 mlflow server -h 0.0.0.0 -p 8000 --backend-store-uri experiments/
 ```
-The experiments excesable at <http://localhost:8000/>
 
+The experiments can be then viewable at <http://localhost:8000/>
+
+### Generate results
+
+Use scripts and notebooks from `notebooks` directory to generate results, plots and classification metrics.
+
+For example, run `produce_results.py` script to generate the metrics and some results.
+
+## Issues
+
+The code was initially created by Janez Lapajne. Regarding any question, post an issue on Github.
