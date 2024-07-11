@@ -10,7 +10,7 @@ Hyperspectral imaging has emerged as a pivotal technology in agricultural resear
 
 **Authors:** Janez Lapajne*, Ana Vojnović, Andrej Vončina and Uroš Žibrat \
 **Keywords:** Hyperspectral imaging; deep learning; potato plant; water-deficiency; drought stress \
-**Published In:** Plants \
+**Published In:** [Plants](https://www.mdpi.com/2223-7747/13/14/1918) \
 **Publication Date:** 07/2024
 
 ### ⚙️ Environment setup
