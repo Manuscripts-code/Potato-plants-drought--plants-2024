@@ -1,0 +1,78 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: >-
+  Enhancing Water-Deficient Potato Plant Identification:
+  Assessing Realistic Performance of Attention-Based Deep
+  Neural Networks and Hyperspectral Imaging for Agricultural
+  Applications
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Janez
+    family-names: Lapajne
+    email: janez.lapajne@kis.si
+identifiers:
+  - type: doi
+    value: 10.3390/plants13141918
+    description: Manuscript
+  - type: doi
+    value: 10.5281/zenodo.7936850
+    description: Dataset
+repository-code: >-
+  https://github.com/Manuscripts-code/Potato-plants-drought--plants-2024
+abstract: >-
+  Hyperspectral imaging has emerged as a pivotal technology
+  in agricultural research, offering a powerful means to
+  non-invasively monitor stress factors, such as drought, in
+  crops like potato plants. In this context, the integration
+  of attention-based deep learning models presents a
+  promising avenue for enhancing the efficiency of stress
+  detection, by enabling the identification of meaningful
+  spectral channels. This study assesses the performance of
+  deep learning models on two potato plant cultivars exposed
+  to water-deficient conditions. It explores how various
+  sampling strategies and biases impact the classification
+  metrics by using a dual-sensor hyperspectral imaging
+  systems (VNIR -Visible and Near-Infrared and
+  SWIR—Short-Wave Infrared). Moreover, it focuses on
+  pinpointing crucial wavelengths within the concatenated
+  images indicative of water-deficient conditions. The
+  proposed deep learning model yields encouraging results.
+  In the context of binary classification, it achieved an
+  area under the receiver operating characteristic curve
+  (AUC-ROC—Area Under the Receiver Operating Characteristic
+  Curve) of 0.74 (95% CI: 0.70, 0.78) and 0.64 (95% CI:
+  0.56, 0.69) for the KIS Krka and KIS Savinja varieties,
+  respectively. Moreover, the corresponding F1 scores were
+  0.67 (95% CI: 0.64, 0.71) and 0.63 (95% CI: 0.56, 0.68).
+  An evaluation of the performance of the datasets with
+  deliberately introduced biases consistently demonstrated
+  superior results in comparison to their non-biased
+  equivalents. Notably, the ROC-AUC values exhibited
+  significant improvements, registering a maximum increase
+  of 10.8% for KIS Krka and 18.9% for KIS Savinja. The
+  wavelengths of greatest significance were observed in the
+  ranges of 475–580 nm, 660–730 nm, 940–970 nm, 1420–1510
+  nm, 1875–2040 nm, and 2350–2480 nm. These findings suggest
+  that discerning between the two treatments is attainable,
+  despite the absence of prominently manifested symptoms of
+  drought stress in either cultivar through visual
+  observation. The research outcomes carry significant
+  implications for both precision agriculture and potato
+  breeding. In precision agriculture, precise water
+  monitoring enhances resource allocation, irrigation,
+  yield, and loss prevention. Hyperspectral imaging holds
+  potential to expedite drought-tolerant cultivar selection,
+  thereby streamlining breeding for resilient potatoes
+  adaptable to shifting climates.
+keywords:
+  - hyperspectral imaging
+  - deep learning
+  - potato plant
+  - water-deficiency
+  - drought stress
+license: MIT
